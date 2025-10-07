@@ -48,6 +48,34 @@
         class ErrorBoundary extends React.Component { constructor(props) { super(props); this.state = { hasError: false, error: null }; } static getDerivedStateFromError(error) { return { hasError: true, error }; } componentDidCatch(error, errorInfo) { console.error('Lỗi ứng dụng:', error, errorInfo); } render() { if (this.state.hasError) { return React.createElement('div', { className: "min-h-screen bg-gray-100 flex items-center justify-center p-4" }, React.createElement('div', { className: "bg-white p-6 rounded-lg shadow-md max-w-sm text-center" }, [ React.createElement('h2', { key: 'title', className: "text-lg font-bold text-red-600 mb-2" }, "Đã xảy ra lỗi"), React.createElement('p', { key: 'message', className: "text-gray-700" }, "Ứng dụng gặp sự cố. Vui lòng tải lại trang."), React.createElement('button', { key: 'reload-button', onClick: () => window.location.reload(), className: "mt-4 px-4 py-2 bg-indigo-600 text-white rounded" }, "Tải lại") ])); } return this.props.children; } }
         
         const { useState, useEffect, useCallback, useMemo, useRef } = React;
+        
+        const Briefcase = (props) => React.createElement('span', props, '💼');
+        const List = (props) => React.createElement('span', props, '📋');
+        const KanbanSquare = (props) => React.createElement('span', props, '📊');
+        const Phone = (props) => React.createElement('span', props, '📞');
+        const Mail = (props) => React.createElement('span', props, '✉️');
+        const MapPin = (props) => React.createElement('span', props, '📍');
+        const DollarSign = (props) => React.createElement('span', props, '💵');
+        const X = (props) => React.createElement('span', props, '❌');
+        const Plus = (props) => React.createElement('span', props, '➕');
+        const Clock = (props) => React.createElement('span', props, '⏰');
+        const SettingsIcon = (props) => React.createElement('span', props, '⚙️');
+        const Trash2 = (props) => React.createElement('span', props, '🗑️');
+        const Car = (props) => React.createElement('span', props, '🚗');
+        const Layers = (props) => React.createElement('span', props, '📚');
+        const Save = (props) => React.createElement('span', props, '💾');
+        const BarChartIcon = (props) => React.createElement('span', props, '📊');
+        const formatCurrency = (amount) => { const num = Number(amount); if (isNaN(num) || num === 0) return '0 VNĐ'; return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num); };
+        const formatDate = (timestamp) => { if (!timestamp) return '---'; return new Date(timestamp).toLocaleDateString('vi-VN'); };
+        const formatDateTime = (timestamp) => { if (!timestamp) return '---'; return new Date(timestamp).toLocaleString('vi-VN'); };
+        
+        const VIETNAM_CITIES = [ 'Hà Nội', 'TP Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ' ];
+        const CUSTOMER_TIERS = [
+            { value: 'HOT', label: 'HOT - Tiềm năng Cao', color: 'text-red-600' },
+            { value: 'WARM', label: 'WARM - Đang Chăm sóc', color: 'text-yellow-600' },
+            { value: 'COLD', label: 'COLD - Khách hàng Mới', color: 'text-indigo-600' },
+        ];
+
 
         const LoadingSpinner = () => { return React.createElement('div', { className: "flex justify-center items-center py-8" }, [ React.createElement('div', { key: "spinner-div", className: "loading-spinner" }), React.createElement('span', { key: "spinner-text", className: "ml-3 text-gray-600" }, "Đang tải...") ]); };
         const Modal = ({ isOpen, title, onClose, children, maxWidth = 'max-w-lg' }) => { if (!isOpen) return null; return React.createElement('div', { className: "fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-center items-center p-4", onClick: (e) => { if(e.target === e.currentTarget) onClose() } }, React.createElement('div', { className: `bg-white rounded-lg shadow-xl w-full ${maxWidth} animate-fade-in` }, [ React.createElement('div', { key: 'header', className: "p-4 border-b flex justify-between items-center" }, [ React.createElement('h3', { key: 'title', className: "text-lg font-bold" }, title), React.createElement('button', { key: 'close', onClick: onClose, className: "text-gray-500 hover:text-gray-800" }, "✖") ]), React.createElement('div', { key: 'content', className: "p-4 max-h-[80vh] overflow-y-auto custom-scrollbar" }, children) ])); };
@@ -131,8 +159,21 @@
                             setCustomerSources(data.customerSources || []);
                             setReminders(data.reminders || []);
                         } else {
-                           // Có thể thêm logic tạo dữ liệu mẫu ở đây nếu cần
-                           console.log("No data document found!");
+                           console.log("No data document found! Creating initial data.");
+                           // Tạo dữ liệu ban đầu nếu chưa có
+                           const initialData = {
+                               customers: [],
+                               statuses: [
+                                   { id: 'status1', name: '1. Khách hàng Mới', color: 'bg-indigo-400', order: 1 },
+                                   { id: 'status2', name: '2. Đã Chăm sóc', color: 'bg-yellow-500', order: 2 },
+                                   { id: 'status3', name: '3. Tiềm năng Cao', color: 'bg-red-600', order: 3 },
+                                   { id: 'status4', name: '4. Đã ký HĐ', color: 'bg-green-600', order: 4 },
+                                   { id: 'status5', name: '6. Lostsale', color: 'bg-black', order: 6 },
+                               ],
+                               carModels: [{id: 'model1', name: 'MG ZS'}, {id: 'model2', name: 'MG HS'}],
+                               customerSources: [{id: 'source1', name: 'Facebook'}, {id: 'source2', name: 'Showroom'}]
+                           };
+                           db.collection('data').doc('crmData').set(initialData);
                         }
                         setIsLoading(false);
                     }, error => {
@@ -181,19 +222,17 @@
                     };
                     updatedCustomers = [...customers, newCustomer];
                 }
-                setCustomers(updatedCustomers);
                 saveData({ customers: updatedCustomers });
+                closeCustomerForm();
             };
             
             const handleUpdateCustomer = (customerId, updates) => {
                 const updatedCustomers = customers.map(c => c.id === customerId ? { ...c, ...updates, lastContactDate: Date.now() } : c);
-                setCustomers(updatedCustomers);
                 saveData({ customers: updatedCustomers });
             };
             
             const handleDeleteCustomer = (customerId) => {
                 const updatedCustomers = customers.filter(c => c.id !== customerId);
-                setCustomers(updatedCustomers);
                 saveData({ customers: updatedCustomers });
                 setDeleteConfirm({ isOpen: false, customerId: null });
             };
@@ -201,59 +240,60 @@
             const handleAddInteraction = (customerId, interaction) => {
                 const updatedCustomers = customers.map(c => {
                     if (c.id === customerId) {
-                        return { ...c, interactions: [...(c.interactions || []), interaction], lastContactDate: Date.now() };
+                        const newInteraction = { ...interaction, createdBy: { uid: user.uid, name: user.displayName || user.email } };
+                        return { ...c, interactions: [...(c.interactions || []), newInteraction], lastContactDate: Date.now() };
                     }
                     return c;
                 });
-                setCustomers(updatedCustomers);
+                saveData({ customers: updatedCustomers });
+            };
+            
+            const handleDeleteInteraction = (customerId, interactionId) => {
+                 const updatedCustomers = customers.map(c => {
+                    if (c.id === customerId) {
+                        return { ...c, interactions: (c.interactions || []).filter(i => i.id !== interactionId) };
+                    }
+                    return c;
+                });
                 saveData({ customers: updatedCustomers });
             };
 
             const openEditCustomer = (customer) => { setEditingCustomer(customer); setShowCustomerForm(true); };
             const openAddCustomer = () => { setEditingCustomer(null); setShowCustomerForm(true); };
             const closeCustomerForm = () => { setEditingCustomer(null); setShowCustomerForm(false); };
+            const navItems = [ { id: 'dashboard', label: 'Tổng quan', icon: BarChartIcon }, { id: 'kanban', label: 'Pipeline', icon: KanbanSquare }, { id: 'list', label: 'Danh sách', icon: List } ];
 
             if (isLoading) {
                 return React.createElement(LoadingSpinner);
             }
-
-            // Đây là phần giao diện chính bị thiếu
+            
             return React.createElement('div', { className: "min-h-screen bg-gray-100" }, [
                 React.createElement('header', { key: 'header', className: "bg-white shadow-sm border-b sticky top-0 z-40 p-4 flex justify-between items-center" }, [
                     React.createElement('h1', { key: 'title', className: 'text-xl font-bold'}, 'CRM Sales MG'),
-                    React.createElement('div', { key: 'user-info', className: 'flex items-center space-x-4' }, [
-                        React.createElement('span', { key: 'user-name'}, user.displayName || user.email),
-                        React.createElement('button', { key: 'logout-btn', onClick: onLogout, className: 'px-3 py-1 border rounded-lg text-sm hover:bg-gray-100' }, "Đăng xuất")
+                    React.createElement('div', { key: 'header-right', className: 'flex items-center space-x-4' }, [
+                         React.createElement('div', { key: 'search-group', className: "relative w-64" }, [
+                            React.createElement('input', { key: 'search-input', type: "text", placeholder: "Tìm kiếm...", value: searchTerm, onChange: (e) => handleSearchChange(e.target.value), className: "w-full pl-10 pr-4 py-2 border rounded-lg text-sm" }),
+                            React.createElement('div', { key: 'search-icon-wrapper', className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" }, React.createElement('span', null, "🔍"))
+                        ]),
+                        React.createElement('button', { key: 'add-btn', onClick: openAddCustomer, className: "px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition flex items-center text-sm" }, [ React.createElement(Plus, { key: 'add-customer-plus-icon', className: "w-4 h-4 mr-2" }), "Thêm KH" ]),
+                        React.createElement('div', { key: 'user-info', className: 'flex items-center space-x-2' }, [
+                            React.createElement('span', { key: 'user-name', className: 'text-sm text-gray-600'}, user.displayName || user.email),
+                            React.createElement('button', { key: 'logout-btn', onClick: onLogout, className: 'px-3 py-1 border rounded-lg text-sm hover:bg-gray-100' }, "Đăng xuất")
+                        ])
                     ])
                 ]),
                 React.createElement('nav', { key: 'navigation', className: "bg-white border-b sticky top-[65px] z-30" }, 
                     React.createElement('div', { className: "px-6 flex space-x-8" }, 
-                        React.createElement('button', { key: 'dash-btn', onClick: () => setActiveView('dashboard'), className: `py-4 px-1 border-b-2 font-medium text-sm ${activeView === 'dashboard' ? 'border-indigo-600 text-indigo-600' : 'border-transparent'}` }, "Tổng quan"),
-                        React.createElement('button', { key: 'pipe-btn', onClick: () => setActiveView('kanban'), className: `py-4 px-1 border-b-2 font-medium text-sm ${activeView === 'kanban' ? 'border-indigo-600 text-indigo-600' : 'border-transparent'}` }, "Pipeline"),
-                        React.createElement('button', { key: 'list-btn', onClick: () => setActiveView('list'), className: `py-4 px-1 border-b-2 font-medium text-sm ${activeView === 'list' ? 'border-indigo-600 text-indigo-600' : 'border-transparent'}` }, "Danh sách")
+                       navItems.map(item => React.createElement('button', { key: item.id, onClick: () => setActiveView(item.id), className: `py-4 px-1 border-b-2 font-medium text-sm flex items-center ${activeView === item.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}` }, [ React.createElement(item.icon, { key: item.id + '-icon', className: "w-4 h-4 mr-2" }), item.label ]))
                     )
                 ),
                 React.createElement('main', { key: 'main', className: "p-6" }, 
-                    activeView === 'dashboard' ? React.createElement('h2', null, 'Dashboard View') :
-                    activeView === 'kanban' ? React.createElement('h2', null, 'Kanban View') :
-                    activeView === 'list' ? React.createElement('h2', null, 'List View') : null
+                    activeView === 'list' ? "List View Placeholder" :
+                    activeView === 'kanban' ? "Kanban View Placeholder" :
+                    "Dashboard View Placeholder"
                 ),
-                React.createElement(Modal, {
-                    isOpen: showCustomerForm,
-                    title: editingCustomer ? "Chỉnh sửa Khách hàng" : "Thêm Khách hàng mới",
-                    onClose: closeCustomerForm
-                }, "Nội dung form ở đây"),
-                React.createElement(Modal, {
-                    isOpen: deleteConfirm.isOpen,
-                    title: "Xác nhận Xóa",
-                    onClose: () => setDeleteConfirm({isOpen: false, customerId: null})
-                }, [
-                    React.createElement('p', {key: 'p-confirm'}, 'Bạn có chắc muốn xóa khách hàng này?'),
-                    React.createElement('div', {key: 'btn-group', className: 'flex justify-end space-x-2 mt-4'}, [
-                        React.createElement('button', {key: 'cancel-btn', onClick: () => setDeleteConfirm({isOpen: false, customerId: null})}, 'Hủy'),
-                        React.createElement('button', {key: 'confirm-btn', onClick: () => handleDeleteCustomer(deleteConfirm.customerId), className: 'bg-red-500 text-white px-4 py-2 rounded'}, 'Xóa')
-                    ])
-                ])
+                React.createElement(CustomerForm, { isOpen: showCustomerForm, onClose: closeCustomerForm, onSave: handleSaveCustomer, customer: editingCustomer, statuses: statuses, carModels: carModels, customerSources: customerSources }),
+                React.createElement('div', null, 'Delete Confirmation Modal will go here')
             ]);
         };
 
