@@ -76,8 +76,7 @@
             { value: 'COLD', label: 'COLD - Khách hàng Mới', color: 'text-indigo-600' },
         ];
 
-
-        const LoadingSpinner = () => { return React.createElement('div', { className: "flex justify-center items-center py-8" }, [ React.createElement('div', { key: "spinner-div", className: "loading-spinner" }), React.createElement('span', { key: "spinner-text", className: "ml-3 text-gray-600" }, "Đang tải...") ]); };
+        const LoadingSpinner = () => { return React.createElement('div', { className: "min-h-screen flex justify-center items-center" }, [ React.createElement('div', { key: "spinner-div", className: "loading-spinner" }), React.createElement('span', { key: "spinner-text", className: "ml-3 text-gray-600" }, "Đang tải...") ]); };
         const Modal = ({ isOpen, title, onClose, children, maxWidth = 'max-w-lg' }) => { if (!isOpen) return null; return React.createElement('div', { className: "fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-center items-center p-4", onClick: (e) => { if(e.target === e.currentTarget) onClose() } }, React.createElement('div', { className: `bg-white rounded-lg shadow-xl w-full ${maxWidth} animate-fade-in` }, [ React.createElement('div', { key: 'header', className: "p-4 border-b flex justify-between items-center" }, [ React.createElement('h3', { key: 'title', className: "text-lg font-bold" }, title), React.createElement('button', { key: 'close', onClick: onClose, className: "text-gray-500 hover:text-gray-800" }, "✖") ]), React.createElement('div', { key: 'content', className: "p-4 max-h-[80vh] overflow-y-auto custom-scrollbar" }, children) ])); };
         
         const LoginScreen = ({ onLogin, onGoogleLogin }) => {
@@ -138,7 +137,7 @@
             const [customerSources, setCustomerSources] = useState([]);
             const [reminders, setReminders] = useState([]);
             const [userName, setUserName] = useState(user.displayName || user.email);
-            const [activeView, setActiveView] = useState('dashboard');
+            const [activeView, setActiveView] = useState('kanban');
             const [isLoading, setIsLoading] = useState(true);
             const [showCustomerForm, setShowCustomerForm] = useState(false);
             const [editingCustomer, setEditingCustomer] = useState(null);
@@ -150,7 +149,6 @@
             useEffect(() => {
                 const unsubscribe = db.collection('data').doc('crmData')
                     .onSnapshot(doc => {
-                        setIsLoading(true);
                         if (doc.exists) {
                             const data = doc.data();
                             setCustomers(data.customers || []);
@@ -160,7 +158,6 @@
                             setReminders(data.reminders || []);
                         } else {
                            console.log("No data document found! Creating initial data.");
-                           // Tạo dữ liệu ban đầu nếu chưa có
                            const initialData = {
                                customers: [],
                                statuses: [
@@ -192,19 +189,13 @@
             const handleSearchChange = (term) => {
                 setSearchTerm(term);
                 if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-                searchTimeoutRef.current = setTimeout(() => {
-                    setDebouncedSearchTerm(term);
-                }, 300);
+                searchTimeoutRef.current = setTimeout(() => { setDebouncedSearchTerm(term); }, 300);
             };
 
             const filteredCustomers = useMemo(() => {
                 if (!debouncedSearchTerm.trim()) return customers;
                 const term = debouncedSearchTerm.toLowerCase();
-                return customers.filter(c => 
-                    c.name.toLowerCase().includes(term) || 
-                    c.phone.includes(term) || 
-                    (c.email && c.email.toLowerCase().includes(term))
-                );
+                return customers.filter(c => c.name.toLowerCase().includes(term) || c.phone.includes(term) || (c.email && c.email.toLowerCase().includes(term)));
             }, [customers, debouncedSearchTerm]);
 
             const handleSaveCustomer = (customerData) => {
@@ -261,20 +252,23 @@
             const openEditCustomer = (customer) => { setEditingCustomer(customer); setShowCustomerForm(true); };
             const openAddCustomer = () => { setEditingCustomer(null); setShowCustomerForm(true); };
             const closeCustomerForm = () => { setEditingCustomer(null); setShowCustomerForm(false); };
-            const navItems = [ { id: 'dashboard', label: 'Tổng quan', icon: BarChartIcon }, { id: 'kanban', label: 'Pipeline', icon: KanbanSquare }, { id: 'list', label: 'Danh sách', icon: List } ];
+            const navItems = [ { id: 'kanban', label: 'Pipeline', icon: KanbanSquare }, { id: 'list', label: 'Danh sách', icon: List } ];
 
             if (isLoading) {
                 return React.createElement(LoadingSpinner);
             }
             
+            // Đây là phần giao diện chính bị thiếu
             return React.createElement('div', { className: "min-h-screen bg-gray-100" }, [
                 React.createElement('header', { key: 'header', className: "bg-white shadow-sm border-b sticky top-0 z-40 p-4 flex justify-between items-center" }, [
-                    React.createElement('h1', { key: 'title', className: 'text-xl font-bold'}, 'CRM Sales MG'),
-                    React.createElement('div', { key: 'header-right', className: 'flex items-center space-x-4' }, [
-                         React.createElement('div', { key: 'search-group', className: "relative w-64" }, [
+                     React.createElement('div', { key: 'header-left', className: 'flex items-center space-x-4'}, [
+                        React.createElement('h1', { key: 'title', className: 'text-xl font-bold'}, 'CRM Sales MG'),
+                        React.createElement('div', { key: 'search-group', className: "relative w-64" }, [
                             React.createElement('input', { key: 'search-input', type: "text", placeholder: "Tìm kiếm...", value: searchTerm, onChange: (e) => handleSearchChange(e.target.value), className: "w-full pl-10 pr-4 py-2 border rounded-lg text-sm" }),
                             React.createElement('div', { key: 'search-icon-wrapper', className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" }, React.createElement('span', null, "🔍"))
                         ]),
+                     ]),
+                    React.createElement('div', { key: 'header-right', className: 'flex items-center space-x-4' }, [
                         React.createElement('button', { key: 'add-btn', onClick: openAddCustomer, className: "px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition flex items-center text-sm" }, [ React.createElement(Plus, { key: 'add-customer-plus-icon', className: "w-4 h-4 mr-2" }), "Thêm KH" ]),
                         React.createElement('div', { key: 'user-info', className: 'flex items-center space-x-2' }, [
                             React.createElement('span', { key: 'user-name', className: 'text-sm text-gray-600'}, user.displayName || user.email),
@@ -288,12 +282,11 @@
                     )
                 ),
                 React.createElement('main', { key: 'main', className: "p-6" }, 
-                    activeView === 'list' ? "List View Placeholder" :
-                    activeView === 'kanban' ? "Kanban View Placeholder" :
-                    "Dashboard View Placeholder"
+                    activeView === 'list' ? "List View Will Be Here" :
+                    activeView === 'kanban' ? "Kanban View Will Be Here" :
+                    null
                 ),
-                React.createElement(CustomerForm, { isOpen: showCustomerForm, onClose: closeCustomerForm, onSave: handleSaveCustomer, customer: editingCustomer, statuses: statuses, carModels: carModels, customerSources: customerSources }),
-                React.createElement('div', null, 'Delete Confirmation Modal will go here')
+                // Placeholder for components. They need to be defined.
             ]);
         };
 
