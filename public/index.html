@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Sales MG - v2.1 Optimized</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+        .drag-over {
+            background-color: #e0e7ff !important;
+            border: 2px dashed #6366f1 !important;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calendar-day {
+            min-height: 100px;
+        }
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Error Boundary Component
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+
+            static getDerivedStateFromError(error) {
+                return { hasError: true, error };
+            }
+
+            componentDidCatch(error, errorInfo) {
+                console.error('Lỗi ứng dụng:', error, errorInfo);
+            }
+
+            render() {
+                if (this.state.hasError) {
+                    return React.createElement('div', {
+                        className: "min-h-screen bg-gray-50 flex items-center justify-center p-8"
+                    }, 
+                        React.createElement('div', {
+                            className: "bg-white p-8 rounded-xl shadow-lg max-w-md text-center"
+                        }, [
+                            React.createElement('span', { key: 'icon', className: "text-4xl mb-4 block" }, '⚠️'),
+                            React.createElement('h2', { key: 'title', className: "text-xl font-bold text-gray-800 mb-2" }, "Đã xảy ra lỗi"),
+                            React.createElement('p', { key: 'message', className: "text-gray-600 mb-4" }, "Ứng dụng gặp sự cố. Vui lòng tải lại trang hoặc xóa dữ liệu trình duyệt."),
+                            React.createElement('button', { key: 'reload-button', onClick: () => window.location.reload(), className: "px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition" }, "Tải lại trang")
+                        ])
+                    );
+                }
+
+                return this.props.children;
+            }
+        }
+
+        const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+        // Simple icon components using emoji
+        const Briefcase = (props) => React.createElement('span', props, '💼');
+        const List = (props) => React.createElement('span', props, '📋');
+        const KanbanSquare = (props) => React.createElement('span', props, '📊');
+        const Phone = (props) => React.createElement('span', props, '📞');
+        const Mail = (props) => React.createElement('span', props, '✉️');
+        const MapPin = (props) => React.createElement('span', props, '📍');
+        const DollarSign = (props) => React.createElement('span', props, '💵');
+        const Calendar = (props) => React.createElement('span', props, '📅');
+        const X = (props) => React.createElement('span', props, '❌');
+        const Plus = (props) => React.createElement('span', props, '➕');
+        const Clock = (props) => React.createElement('span', props, '⏰');
+        const TrendingUp = (props) => React.createElement('span', props, '📈');
+        const RefreshCw = (props) => React.createElement('span', props, '🔄');
+        const Layers = (props) => React.createElement('span', props, '📚');
+        const Zap = (props) => React.createElement('span', props, '⚡');
+        const SettingsIcon = (props) => React.createElement('span', props, '⚙️');
+        const Trash2 = (props) => React.createElement('span', props, '🗑️');
+        const Car = (props) => React.createElement('span', props, '🚗');
+        const Users = (props) => React.createElement('span', props, '👥');
+        const LayoutList = (props) => React.createElement('span', props, '📑');
+        const Save = (props) => React.createElement('span', props, '💾');
+        const AlertTriangle = (props) => React.createElement('span', props, '⚠️');
+        const BarChartIcon = (props) => React.createElement('span', props, '📊');
+        const PieChartIcon = (props) => React.createElement('span', props, '🥧');
+        const CheckCircle = (props) => React.createElement('span', props, '✅');
+        const Download = (props) => React.createElement('span', props, '📥');
+        const Bell = (props) => React.createElement('span', props, '🔔');
+        const Database = (props) => React.createElement('span', props, '💾');
+        const Target = (props) => React.createElement('span', props, '🎯');
+        const Trophy = (props) => React.createElement('span', props, '🏆');
+
+        // Constants
+        const VIETNAM_CITIES = [ 'Hà Nội', 'TP Hồ Chí Minh', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước', 'Bình Thuận', 'Cà Mau', 'Cao Bằng', 'Đắk Lắk', 'Đắk Nông' ];
+        const CUSTOMER_TIERS = [
+            { value: 'HOT', label: 'HOT - Tiềm năng Cao', color: 'text-red-600', reminderDays: 3 },
+            { value: 'WARM', label: 'WARM - Đang Chăm sóc', color: 'text-yellow-600', reminderDays: 5 },
+            { value: 'COLD', label: 'COLD - Khách hàng Mới', color: 'text-indigo-600', reminderDays: 7 },
+            { value: 'LOST', label: 'LOST - Đã Lostsale/Thất bại', color: 'text-gray-600', reminderDays: 0 },
+        ];
+
+        // Utility functions
+        const formatCurrency = (amount) => { const num = Number(amount); if (isNaN(num) || num === 0) return '0 VNĐ'; return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num); };
+        const formatDate = (timestamp) => { if (!timestamp) return '---'; const date = new Date(timestamp); if (isNaN(date)) return '---'; return date.toLocaleDateString('vi-VN'); };
+        const formatDateTime = (timestamp) => { if (!timestamp) return '---'; const date = new Date(timestamp); if (isNaN(date)) return '---'; return date.toLocaleString('vi-VN'); };
+        const calculateReminderDate = (tier, createdDate) => { const tierConfig = CUSTOMER_TIERS.find(t => t.value === tier); if (!tierConfig || !tierConfig.reminderDays) return null; const reminderDate = new Date(createdDate); reminderDate.setDate(reminderDate.getDate() + tierConfig.reminderDays); return reminderDate.getTime(); };
+
+        // localStorage utility functions
+        const StorageService = {
+            saveData: function(key, data) { try { localStorage.setItem('crm_mg_' + key, JSON.stringify(data)); return true; } catch (error) { console.error('Lỗi khi lưu dữ liệu:', error); if (error.name === 'QuotaExceededError') { alert('Bộ nhớ đã đầy. Vui lòng xóa bớt dữ liệu cũ hoặc xuất dữ liệu ra file.'); } return false; } },
+            getData: function(key) { try { const data = localStorage.getItem('crm_mg_' + key); if (data === null || data === 'undefined') { return null; } return JSON.parse(data); } catch (error) { console.error('Lỗi khi đọc dữ liệu:', error); return null; } },
+            removeData: function(key) { try { localStorage.removeItem('crm_mg_' + key); return true; } catch (error) { console.error('Lỗi khi xóa dữ liệu:', error); return false; } },
+            saveAllData: function(data) { const success = this.saveData('customers', data.customers) && this.saveData('statuses', data.statuses) && this.saveData('carModels', data.carModels) && this.saveData('customerSources', data.customerSources) && this.saveData('reminders', data.reminders) && this.saveData('userName', data.userName) && this.saveData('salesGoals', data.salesGoals); if (success) { this.saveData('lastSave', new Date().toISOString()); } return success; },
+            getAllData: function() { return { customers: this.getData('customers') || [], statuses: this.getData('statuses') || [], carModels: this.getData('carModels') || [], customerSources: this.getData('customerSources') || [], reminders: this.getData('reminders') || [], userName: this.getData('userName') || '', salesGoals: this.getData('salesGoals') || [], lastSave: this.getData('lastSave') || null }; },
+            exportData: function() { const data = this.getAllData(); const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'crm_mg_backup_' + new Date().toISOString().split('T')[0] + '.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); setTimeout(() => { alert('Xuất dữ liệu thành công! File đã được tải về.'); }, 100); },
+            importData: function(file, callback) { const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); if (data.customers && data.statuses) { callback(data); } else { alert('File không hợp lệ! Vui lòng chọn file backup từ CRM Sales MG.'); } } catch (error) { alert('Lỗi khi đọc file: ' + error.message); } }; reader.onerror = function() { alert('Lỗi khi đọc file. Vui lòng thử lại.'); }; reader.readAsText(file); },
+            resetData: function() { if (confirm('BẠN CÓ CHẮC CHẮN MUỐN XÓA TOÀN BỘ DỮ LIỆU?\n\nHành động này sẽ xóa tất cả khách hàng, cài đặt và không thể hoàn tác!\n\nHãy chắc chắn bạn đã xuất dữ liệu backup nếu cần.')) { const keys = []; for (let i = 0; i < localStorage.length; i++) { const key = localStorage.key(i); if (key && key.startsWith('crm_mg_')) { keys.push(key); } } keys.forEach(key => localStorage.removeItem(key)); return true; } return false; }
+        };
+
+        // Mock Data
+        const generateMockData = () => {
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+            return {
+                statuses: [
+                    { id: 'status1', name: '1. Khách hàng Mới', color: 'bg-indigo-400', order: 1, type: 'pipeline' },
+                    { id: 'status2', name: '2. Đã Chăm sóc', color: 'bg-yellow-500', order: 2, type: 'pipeline' },
+                    { id: 'status3', name: '3. Tiềm năng Cao', color: 'bg-red-600', order: 3, type: 'pipeline' },
+                    { id: 'status4', name: '4. Đã ký HĐ', color: 'bg-green-600', order: 4, type: 'win' },
+                    { id: 'status6', name: '5. Đã giao xe', color: 'bg-blue-600', order: 5, type: 'delivered' },
+                    { id: 'status5', name: '6. Lostsale', color: 'bg-black', order: 6, type: 'lostsale' },
+                ],
+                carModels: [ { id: 'model1', name: 'MG ZS' }, { id: 'model2', name: 'MG HS' }, { id: 'model3', name: 'MG RX5' }, { id: 'model4', name: 'MG GT' } ],
+                customerSources: [ { id: 'source1', name: 'Facebook' }, { id: 'source2', name: 'Website' }, { id: 'source3', name: 'Showroom' }, { id: 'source4', name: 'Giới thiệu' }, { id: 'source5', name: 'Zalo' } ],
+                customers: [
+                    { id: 'cust1', name: 'Nguyễn Văn A', phone: '0901234567', email: 'a.nguyen@email.com', carModel: 'MG RX5', source: 'Showroom', statusId: 'status3', city: 'TP Hồ Chí Minh', notes: 'Khách hàng đã lái thử MG RX5, đang so sánh giá với đối thủ.', salesValue: 780000000, tier: 'HOT', createdDate: now - 7 * oneDay, lastContactDate: now, interactions: [ { id: 'int1', type: 'call', date: now - 2 * oneDay, notes: 'Gọi điện tư vấn về MG RX5, khách hàng quan tâm đến tính năng an toàn', duration: 15, outcome: 'positive' }, { id: 'int2', type: 'test_drive', date: now - 1 * oneDay, notes: 'Khách hàng đến lái thử MG RX5, rất hài lòng với trải nghiệm', duration: 45, outcome: 'positive' } ] },
+                    { id: 'cust2', name: 'Lê Thị B', phone: '0918765432', email: 'b.le@email.com', carModel: 'MG ZS', source: 'Facebook', statusId: 'status2', city: 'Hà Nội', notes: 'Đã gửi báo giá và video xe MG ZS.', salesValue: 550000000, tier: 'WARM', createdDate: now - 3 * oneDay, lastContactDate: now - 2 * oneDay, interactions: [{ id: 'int3', type: 'email', date: now - 3 * oneDay, notes: 'Gửi thông tin brochure MG ZS qua email', outcome: 'neutral' }] },
+                    { id: 'cust3', name: 'Trần Văn C', phone: '0923456789', email: 'c.tran@email.com', carModel: 'MG HS', source: 'Website', statusId: 'status1', city: 'Đà Nẵng', notes: 'Khách hàng mới, cần liên hệ tư vấn.', salesValue: 650000000, tier: 'COLD', createdDate: now - 1 * oneDay, lastContactDate: now - 1 * oneDay, interactions: [] },
+                    { id: 'cust4', name: 'Phạm Thị D', phone: '0934567890', email: 'd.pham@email.com', carModel: 'MG GT', source: 'Giới thiệu', statusId: 'status4', city: 'Hải Phòng', notes: 'Đã ký hợp đồng thành công.', salesValue: 920000000, tier: 'HOT', createdDate: now - 15 * oneDay, lastContactDate: now - 5 * oneDay, interactions: [ { id: 'int4', type: 'meeting', date: now - 8 * oneDay, notes: 'Gặp mặt trực tiếp tại showroom, thảo luận chi tiết hợp đồng', duration: 60, outcome: 'positive' }, { id: 'int5', type: 'quotation', date: now - 6 * oneDay, notes: 'Gửi báo giá chi tiết và các ưu đãi đặc biệt', outcome: 'positive' } ] },
+                    { id: 'cust5', name: 'Hoàng Văn E', phone: '0945678901', email: 'e.hoang@email.com', carModel: 'MG ZS', source: 'Zalo', statusId: 'status5', city: 'Cần Thơ', notes: 'Khách hàng đã chọn mua xe khác.', salesValue: 0, tier: 'LOST', createdDate: now - 10 * oneDay, lastContactDate: now - 8 * oneDay, interactions: [{ id: 'int6', type: 'call', date: now - 9 * oneDay, notes: 'Khách hàng thông báo đã mua xe competitor', duration: 10, outcome: 'negative' }] },
+                    { id: 'cust6', name: 'Vũ Thị F', phone: '0956789012', email: 'f.vu@email.com', carModel: 'MG HS', source: 'Showroom', statusId: 'status6', city: 'Hà Nội', notes: 'Đã giao xe thành công ngày 15/12/2024', salesValue: 680000000, tier: 'HOT', createdDate: now - 30 * oneDay, lastContactDate: now - 5 * oneDay, interactions: [] },
+                    { id: 'cust7', name: 'Ngô Văn G', phone: '0967890123', email: 'g.ngo@email.com', carModel: 'MG ZS', source: 'Website', statusId: 'status6', city: 'Đà Nẵng', notes: 'Đã giao xe MG ZS màu đỏ', salesValue: 560000000, tier: 'HOT', createdDate: now - 25 * oneDay, lastContactDate: now - 10 * oneDay, interactions: [] }
+                ],
+                reminders: [
+                    { id: 'rem1', customerId: 'cust1', title: 'Gọi lại cho Nguyễn Văn A', description: 'Hỏi về quyết định mua xe MG RX5', dueDate: now + 2 * oneDay, completed: false, priority: 'high', type: 'care_reminder' },
+                    { id: 'rem2', customerId: 'cust2', title: 'Gửi tài liệu kỹ thuật MG ZS', description: 'Gửi brochure và video đánh giá', dueDate: now + 1 * oneDay, completed: false, priority: 'medium', type: 'care_reminder' }
+                ],
+                salesGoals: [
+                    { id: 'goal1', type: 'revenue', target: 5000000000, current: 0, period: 'monthly', title: 'Doanh số tháng', description: 'Mục tiêu doanh số hàng tháng', createdAt: now, isActive: true },
+                    { id: 'goal2', type: 'units', target: 10, current: 0, period: 'monthly', title: 'Số xe giao', description: 'Mục tiêu số lượng xe giao hàng tháng', createdAt: now, isActive: true }
+                ]
+            };
+        };
+
+        // ==================== COMPONENTS ====================
+
+        const LoadingSpinner = () => { return React.createElement('div', { className: "flex justify-center items-center py-8" }, [ React.createElement(RefreshCw, { key: 'spinner', className: "w-6 h-6 animate-spin text-indigo-600" }), React.createElement('span', { key: 'text', className: "ml-2 text-gray-600" }, "Đang tải dữ liệu...") ]); };
+        const Modal = ({ isOpen, title, onClose, children, maxWidth = 'max-w-lg' }) => { if (!isOpen) return null; const handleBackdropClick = (e) => { if (e.target === e.currentTarget) { onClose(); } }; return React.createElement('div', { className: "fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-75 flex justify-center items-start pt-8 sm:pt-16 p-4", onClick: handleBackdropClick }, React.createElement('div', { className: `bg-white rounded-xl shadow-2xl w-full ${maxWidth} transform transition-all duration-300` }, [ React.createElement('div', { key: 'header', className: "p-5 border-b flex justify-between items-center sticky top-0 bg-white z-10" }, [ React.createElement('h3', { key: 'title', className: "text-xl font-bold text-gray-800" }, title), React.createElement('button', { key: 'close', onClick: onClose, className: "text-gray-400 hover:text-gray-600 transition" }, React.createElement(X, { className: "w-6 h-6" })) ]), React.createElement('div', { key: 'content', className: "p-6 max-h-[80vh] overflow-y-auto custom-scrollbar" }, children) ])); };
+        const ConfirmationModal = ({ isOpen, title, message, onConfirm, onCancel }) => { if (!isOpen) return null; return React.createElement(Modal, { isOpen: isOpen, title: title, onClose: onCancel, maxWidth: "max-w-sm" }, [ React.createElement('div', { key: 'content', className: "text-center p-4" }, [ React.createElement(AlertTriangle, { key: 'icon', className: "w-12 h-12 text-red-500 mx-auto mb-4" }), React.createElement('p', { key: 'title', className: "text-lg font-semibold text-gray-800 mb-2" }, title), React.createElement('p', { key: 'message', className: "text-gray-600 mb-6" }, message), React.createElement('div', { key: 'actions', className: "flex justify-center space-x-4" }, [ React.createElement('button', { key: 'cancel', onClick: onCancel, className: "px-6 py-2 border rounded-lg text-gray-600 hover:bg-gray-100 transition" }, "Hủy bỏ"), React.createElement('button', { key: 'confirm', onClick: onConfirm, className: "px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition" }, "Xác nhận Xóa") ]) ]) ]); };
+        
+        const InteractionHistory = ({ interactions, onAddInteraction, onDeleteInteraction, userName }) => {
+            const [newInteraction, setNewInteraction] = useState({ type: 'call', notes: '', duration: 0, outcome: 'neutral' });
+            const [isAdding, setIsAdding] = useState(false);
+            const interactionTypes = [ { value: 'call', label: '📞 Cuộc gọi', color: 'bg-green-100 text-green-800' }, { value: 'email', label: '✉️ Email', color: 'bg-blue-100 text-blue-800' }, { value: 'meeting', label: '🤝 Gặp mặt', color: 'bg-purple-100 text-purple-800' }, { value: 'test_drive', label: '🚗 Lái thử', color: 'bg-orange-100 text-orange-800' }, { value: 'quotation', label: '💰 Báo giá', color: 'bg-indigo-100 text-indigo-800' }, { value: 'other', label: '📝 Khác', color: 'bg-gray-100 text-gray-800' } ];
+            const handleAddInteraction = () => { if (!newInteraction.notes.trim()) { alert('Vui lòng nhập nội dung tương tác'); return; } const interaction = { id: 'int-' + Date.now(), type: newInteraction.type, date: Date.now(), notes: newInteraction.notes, duration: newInteraction.duration || 0, outcome: newInteraction.outcome }; onAddInteraction(interaction); setNewInteraction({ type: 'call', notes: '', duration: 0, outcome: 'neutral' }); setIsAdding(false); };
+            return React.createElement('div', { className: "space-y-4" }, [ React.createElement('div', { key: 'header', className: "flex justify-between items-center" }, [ React.createElement('h4', { key: 'title', className: "font-semibold text-gray-800" }, `Lịch sử Tương tác (${interactions.length})`), React.createElement('button', { key: 'add-button', onClick: () => setIsAdding(!isAdding), className: "px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition flex items-center" }, [ React.createElement(Plus, { key: 'icon', className: "w-4 h-4 mr-1" }), "Thêm tương tác" ]) ]), isAdding && React.createElement('div', { key: 'add-form', className: "p-4 border border-gray-200 rounded-lg bg-gray-50" }, [ React.createElement('div', { key: 'form-header', className: "flex justify-between items-center mb-3" }, [ React.createElement('h5', { key: 'title', className: "font-medium text-gray-700" }, "Thêm tương tác mới"), React.createElement('button', { key: 'close-button', onClick: () => setIsAdding(false), className: "text-gray-400 hover:text-gray-600" }, React.createElement(X, { className: "w-4 h-4" })) ]), React.createElement('div', { key: 'form-content', className: "space-y-3" }, [ React.createElement('div', { key: 'type-duration', className: "grid grid-cols-2 gap-3" }, [ React.createElement('select', { key: 'type', value: newInteraction.type, onChange: (e) => setNewInteraction(prev => ({ ...prev, type: e.target.value })), className: "p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, interactionTypes.map(type => React.createElement('option', { key: type.value, value: type.value }, type.label))), React.createElement('div', { key: 'duration', className: "flex items-center space-x-2" }, [ React.createElement('input', { key: 'duration-input', type: "number", placeholder: "Phút", value: newInteraction.duration, onChange: (e) => setNewInteraction(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 })), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500", min: "0" }), React.createElement('span', { key: 'minutes-label', className: "text-sm text-gray-500 whitespace-nowrap" }, "phút") ]) ]), React.createElement('textarea', { key: 'notes', placeholder: "Mô tả chi tiết về cuộc tương tác...", value: newInteraction.notes, onChange: (e) => setNewInteraction(prev => ({ ...prev, notes: e.target.value })), rows: 3, className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }), React.createElement('select', { key: 'outcome', value: newInteraction.outcome, onChange: (e) => setNewInteraction(prev => ({ ...prev, outcome: e.target.value })), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, [ React.createElement('option', { key: 'positive', value: "positive" }, "✅ Kết quả tích cực"), React.createElement('option', { key: 'neutral', value: "neutral" }, "⚪ Kết quả trung lập"), React.createElement('option', { key: 'negative', value: "negative" }, "❌ Kết quả tiêu cực") ]), React.createElement('button', { key: 'submit', onClick: handleAddInteraction, className: "w-full py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition" }, "Lưu tương tác") ]) ]), React.createElement('div', { key: 'interactions-list', className: "space-y-3 max-h-80 overflow-y-auto custom-scrollbar" }, interactions.length === 0 ? React.createElement('div', { key: 'empty-state', className: "text-center py-8 text-gray-500" }, [ React.createElement('div', { key: 'icon', className: "text-4xl mb-2" }, "📝"), React.createElement('p', { key: 'message1' }, "Chưa có lịch sử tương tác"), React.createElement('p', { key: 'message2', className: "text-sm" }, "Thêm tương tác đầu tiên để theo dõi") ]) : interactions.sort((a, b) => b.date - a.date).map(interaction => { const typeConfig = interactionTypes.find(t => t.value === interaction.type); const outcomeIcons = { positive: '✅', neutral: '⚪', negative: '❌' }; return React.createElement('div', { key: interaction.id, className: "p-3 border border-gray-200 rounded-lg bg-white shadow-sm" }, [ React.createElement('div', { key: 'header', className: "flex justify-between items-start mb-2" }, [ React.createElement('div', { key: 'type-date', className: "flex items-center space-x-2" }, [ React.createElement('span', { key: 'type', className: `px-2 py-1 text-xs rounded-full ${typeConfig?.color || 'bg-gray-100 text-gray-800'}` }, typeConfig?.label || 'Khác'), React.createElement('span', { key: 'date', className: "text-xs text-gray-500" }, formatDateTime(interaction.date)) ]), React.createElement('div', { key: 'actions-duration', className: "flex items-center space-x-2" }, [ interaction.duration > 0 && React.createElement('span', { key: 'duration', className: "text-xs text-gray-500" }, `${interaction.duration} phút`), React.createElement('button', { key: 'delete', onClick: () => onDeleteInteraction(interaction.id), className: "text-red-400 hover:text-red-600 transition" }, React.createElement(Trash2, { className: "w-4 h-4" })) ]) ]), React.createElement('div', { key: 'content', className: "flex items-start space-x-2" }, [ React.createElement('span', { key: 'outcome', className: "text-lg mt-0.5" }, outcomeIcons[interaction.outcome] || '⚪'), React.createElement('div', { key: 'notes', className: "flex-1" }, [ React.createElement('p', { key: 'notes-text', className: "text-gray-700" }, interaction.notes), React.createElement('p', { key: 'user', className: "text-xs text-gray-400 mt-1" }, `Thêm bởi: ${userName || 'Nhân viên'}`) ]) ]) ]); })) ]); };
+        
+        const CustomerCard = ({ customer, statuses, onEdit, onDelete, onStatusChange, onAddInteraction, onDeleteInteraction, userName }) => {
+            const [showDetails, setShowDetails] = useState(false);
+            const [showInteractions, setShowInteractions] = useState(false);
+            const status = statuses.find(s => s.id === customer.statusId);
+            const tierConfig = CUSTOMER_TIERS.find(t => t.value === customer.tier);
+            const totalInteractions = customer.interactions ? customer.interactions.length : 0;
+            const lastInteraction = customer.interactions && customer.interactions.length > 0 ? customer.interactions.sort((a, b) => b.date - a.date)[0] : null;
+            const handleStatusChange = (newStatusId) => { onStatusChange(customer.id, newStatusId); };
+            return React.createElement('div', { className: "bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300" }, [ React.createElement('div', { key: 'header', className: "p-4 border-b border-gray-100" }, [ React.createElement('div', { key: 'name-tier', className: "flex justify-between items-start mb-2" }, [ React.createElement('h3', { key: 'name', className: "font-semibold text-gray-800 text-lg truncate" }, customer.name), React.createElement('span', { key: 'tier', className: `text-xs font-medium px-2 py-1 rounded-full ${tierConfig?.color || 'text-gray-600'} border border-current` }, tierConfig?.label?.split(' - ')[0] || customer.tier) ]), React.createElement('div', { key: 'contact-info', className: "flex flex-wrap gap-2 text-sm text-gray-600" }, [ React.createElement('div', { key: 'phone', className: "flex items-center" }, [ React.createElement(Phone, { key: 'phone-icon', className: "w-4 h-4 mr-1" }), customer.phone ]), customer.email && React.createElement('div', { key: 'email', className: "flex items-center" }, [ React.createElement(Mail, { key: 'email-icon', className: "w-4 h-4 mr-1" }), React.createElement('span', { key: 'email-text', className: "truncate max-w-[120px]" }, customer.email) ]) ]) ]), React.createElement('div', { key: 'body', className: "p-4 space-y-3" }, [ React.createElement('div', { key: 'car-source', className: "grid grid-cols-2 gap-4 text-sm" }, [ React.createElement('div', { key: 'car', className: "flex items-center" }, [ React.createElement(Car, { key: 'car-icon', className: "w-4 h-4 mr-2 text-gray-400" }), React.createElement('span', { key: 'car-text' }, customer.carModel || '---') ]), React.createElement('div', { key: 'source', className: "flex items-center" }, [ React.createElement(Layers, { key: 'source-icon', className: "w-4 h-4 mr-2 text-gray-400" }), React.createElement('span', { key: 'source-text' }, customer.source || '---') ]) ]), React.createElement('div', { key: 'city-value', className: "grid grid-cols-2 gap-4 text-sm" }, [ React.createElement('div', { key: 'city', className: "flex items-center" }, [ React.createElement(MapPin, { key: 'city-icon', className: "w-4 h-4 mr-2 text-gray-400" }), React.createElement('span', { key: 'city-text' }, customer.city || '---') ]), customer.salesValue > 0 && React.createElement('div', { key: 'value', className: "flex items-center" }, [ React.createElement(DollarSign, { key: 'value-icon', className: "w-4 h-4 mr-2 text-green-500" }), React.createElement('span', { key: 'value-text', className: "font-medium text-green-600" }, formatCurrency(customer.salesValue)) ]) ]), React.createElement('div', { key: 'status', className: "space-y-2" }, [ React.createElement('label', { key: 'status-label', className: "block text-xs font-medium text-gray-500" }, "Trạng thái:"), React.createElement('select', { key: 'status-select', value: customer.statusId, onChange: (e) => handleStatusChange(e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500" }, statuses.sort((a, b) => a.order - b.order).map(status => React.createElement('option', { key: status.id, value: status.id }, status.name))) ]), React.createElement('div', { key: 'interactions-summary', className: "border-t border-gray-100 pt-3" }, [ React.createElement('button', { key: 'interactions-button', onClick: () => setShowInteractions(!showInteractions), className: "w-full flex justify-between items-center p-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition" }, [ React.createElement('span', { key: 'text', className: "flex items-center" }, [ React.createElement(Clock, { key: 'icon', className: "w-4 h-4 mr-2" }), `Lịch sử tương tác (${totalInteractions})` ]), React.createElement('span', { key: 'arrow', className: "transform transition-transform" }, showInteractions ? '▲' : '▼') ]), lastInteraction && React.createElement('div', { key: 'last-interaction', className: "mt-2 p-2 bg-gray-50 rounded-lg text-xs" }, [ React.createElement('p', { key: 'date', className: "text-gray-500" }, `Lần cuối: ${formatDateTime(lastInteraction.date)}`), React.createElement('p', { key: 'notes', className: "text-gray-700 truncate" }, lastInteraction.notes) ]) ]) ]), showInteractions && React.createElement('div', { key: 'interactions-panel', className: "border-t border-gray-100 p-4 bg-gray-50" }, React.createElement(InteractionHistory, { interactions: customer.interactions || [], onAddInteraction: (interaction) => onAddInteraction(customer.id, interaction), onDeleteInteraction: (interactionId) => onDeleteInteraction(customer.id, interactionId), userName: userName })), React.createElement('div', { key: 'footer', className: "p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl" }, [ React.createElement('div', { key: 'footer-content', className: "flex justify-between items-center" }, [ React.createElement('button', { key: 'details-button', onClick: () => setShowDetails(!showDetails), className: "text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center transition" }, [ showDetails ? 'Ẩn chi tiết' : 'Xem chi tiết', React.createElement('span', { key: 'arrow', className: "ml-1" }, showDetails ? '▲' : '▼') ]), React.createElement('div', { key: 'actions', className: "flex space-x-2" }, [ React.createElement('button', { key: 'edit-button', onClick: () => onEdit(customer), className: "p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" }, "✏️"), React.createElement('button', { key: 'delete-button', onClick: () => onDelete(customer.id), className: "p-2 text-red-600 hover:bg-red-50 rounded-lg transition" }, "🗑️") ]) ]), showDetails && React.createElement('div', { key: 'details', className: "mt-4 p-4 bg-white border border-gray-200 rounded-lg space-y-3" }, [ React.createElement('div', { key: 'dates', className: "grid grid-cols-2 gap-4 text-sm" }, [ React.createElement('div', { key: 'created' }, [ React.createElement('span', { key: 'label', className: "text-gray-500" }, "Ngày tạo:"), React.createElement('div', { key: 'value', className: "font-medium" }, formatDate(customer.createdDate)) ]), React.createElement('div', { key: 'contact' }, [ React.createElement('span', { key: 'label', className: "text-gray-500" }, "Liên hệ cuối:"), React.createElement('div', { key: 'value', className: "font-medium" }, formatDate(customer.lastContactDate)) ]) ]), customer.notes && React.createElement('div', { key: 'notes' }, [ React.createElement('span', { key: 'label', className: "text-gray-500 text-sm" }, "Ghi chú:"), React.createElement('p', { key: 'value', className: "mt-1 text-gray-700" }, customer.notes) ]) ]) ]) ]); };
+        
+        const CustomerForm = ({ isOpen, onClose, onSave, customer, statuses, carModels, customerSources }) => {
+            const [formData, setFormData] = useState({ name: '', phone: '', email: '', carModel: '', source: '', statusId: '', city: '', notes: '', salesValue: 0, tier: 'COLD' });
+            const [errors, setErrors] = useState({});
+            useEffect(() => { if (customer) { setFormData({ name: customer.name || '', phone: customer.phone || '', email: customer.email || '', carModel: customer.carModel || '', source: customer.source || '', statusId: customer.statusId || (statuses[0]?.id || ''), city: customer.city || '', notes: customer.notes || '', salesValue: customer.salesValue || 0, tier: customer.tier || 'COLD' }); } else { setFormData({ name: '', phone: '', email: '', carModel: '', source: '', statusId: statuses[0]?.id || '', city: '', notes: '', salesValue: 0, tier: 'COLD' }); } setErrors({}); }, [customer, isOpen, statuses]);
+            const validateForm = () => { const newErrors = {}; if (!formData.name.trim()) { newErrors.name = 'Vui lòng nhập tên khách hàng'; } if (!formData.phone.trim()) { newErrors.phone = 'Vui lòng nhập số điện thoại'; } else if (!/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(formData.phone.replace(/\s/g, ''))) { newErrors.phone = 'Số điện thoại không hợp lệ'; } if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) { newErrors.email = 'Email không hợp lệ'; } setErrors(newErrors); return Object.keys(newErrors).length === 0; };
+            const handleSubmit = (e) => { e.preventDefault(); if (!validateForm()) { return; } const customerData = { ...formData, salesValue: Number(formData.salesValue) || 0, createdDate: customer ? customer.createdDate : Date.now(), lastContactDate: Date.now(), interactions: customer ? customer.interactions || [] : [] }; onSave(customerData); onClose(); };
+            const handleChange = (field, value) => { setFormData(prev => ({ ...prev, [field]: value })); if (errors[field]) { setErrors(prev => ({ ...prev, [field]: '' })); } };
+            return React.createElement(Modal, { isOpen: isOpen, title: customer ? 'Chỉnh sửa Khách hàng' : 'Thêm Khách hàng Mới', onClose: onClose, maxWidth: "max-w-2xl" }, React.createElement('form', { onSubmit: handleSubmit, className: "space-y-4" }, [ React.createElement('div', { key: 'personal-info', className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, [ React.createElement('div', { key: 'name' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Tên khách hàng *"), React.createElement('input', { key: 'input', type: "text", value: formData.name, onChange: (e) => handleChange('name', e.target.value), className: `w-full p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 ${errors.name ? 'border-red-500' : 'border-gray-300'}`, placeholder: "Nhập tên khách hàng" }), errors.name && React.createElement('p', { key: 'error', className: "mt-1 text-sm text-red-600" }, errors.name) ]), React.createElement('div', { key: 'phone' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Số điện thoại *"), React.createElement('input', { key: 'input', type: "tel", value: formData.phone, onChange: (e) => handleChange('phone', e.target.value), className: `w-full p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 ${errors.phone ? 'border-red-500' : 'border-gray-300'}`, placeholder: "Nhập số điện thoại" }), errors.phone && React.createElement('p', { key: 'error', className: "mt-1 text-sm text-red-600" }, errors.phone) ]) ]), React.createElement('div', { key: 'contact-info', className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, [ React.createElement('div', { key: 'email' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Email"), React.createElement('input', { key: 'input', type: "email", value: formData.email, onChange: (e) => handleChange('email', e.target.value), className: `w-full p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500 ${errors.email ? 'border-red-500' : 'border-gray-300'}`, placeholder: "Nhập email" }), errors.email && React.createElement('p', { key: 'error', className: "mt-1 text-sm text-red-600" }, errors.email) ]), React.createElement('div', { key: 'city' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Thành phố"), React.createElement('select', { key: 'select', value: formData.city, onChange: (e) => handleChange('city', e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, [ React.createElement('option', { key: 'empty', value: "" }, "Chọn thành phố"), ...VIETNAM_CITIES.map(city => React.createElement('option', { key: city, value: city }, city)) ]) ]) ]), React.createElement('div', { key: 'car-source-info', className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, [ React.createElement('div', { key: 'carModel' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Dòng xe quan tâm"), React.createElement('select', { key: 'select', value: formData.carModel, onChange: (e) => handleChange('carModel', e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, [ React.createElement('option', { key: 'empty', value: "" }, "Chọn dòng xe"), ...carModels.map(model => React.createElement('option', { key: model.id, value: model.name }, model.name)) ]) ]), React.createElement('div', { key: 'source' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Nguồn khách hàng"), React.createElement('select', { key: 'select', value: formData.source, onChange: (e) => handleChange('source', e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, [ React.createElement('option', { key: 'empty', value: "" }, "Chọn nguồn"), ...customerSources.map(source => React.createElement('option', { key: source.id, value: source.name }, source.name)) ]) ]) ]), React.createElement('div', { key: 'status-tier', className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, [ React.createElement('div', { key: 'status' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Trạng thái"), React.createElement('select', { key: 'select', value: formData.statusId, onChange: (e) => handleChange('statusId', e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, statuses.sort((a, b) => a.order - b.order).map(status => React.createElement('option', { key: status.id, value: status.id }, status.name))) ]), React.createElement('div', { key: 'tier' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Phân loại khách hàng"), React.createElement('select', { key: 'select', value: formData.tier, onChange: (e) => handleChange('tier', e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, CUSTOMER_TIERS.map(tier => React.createElement('option', { key: tier.value, value: tier.value }, tier.label))) ]) ]), React.createElement('div', { key: 'sales-value' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Giá trị dự kiến (VNĐ)"), React.createElement('input', { key: 'input', type: "number", value: formData.salesValue, onChange: (e) => handleChange('salesValue', e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500", placeholder: "Nhập giá trị dự kiến", min: "0" }) ]), React.createElement('div', { key: 'notes' }, [ React.createElement('label', { key: 'label', className: "block text-sm font-medium text-gray-700 mb-1" }, "Ghi chú"), React.createElement('textarea', { key: 'textarea', value: formData.notes, onChange: (e) => handleChange('notes', e.target.value), rows: 3, className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500", placeholder: "Nhập ghi chú về khách hàng..." }) ]), React.createElement('div', { key: 'actions', className: "flex justify-end space-x-3 pt-4 border-t border-gray-200" }, [ React.createElement('button', { key: 'cancel', type: "button", onClick: onClose, className: "px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition" }, "Hủy bỏ"), React.createElement('button', { key: 'save', type: "submit", className: "px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition flex items-center" }, [ React.createElement(Save, { key: 'icon', className: "w-4 h-4 mr-2" }), customer ? 'Cập nhật' : 'Thêm khách hàng' ]) ]) ])); };
+        
+        const KanbanView = ({ customers, statuses, onCustomerEdit, onCustomerUpdate, onCustomerDelete, onAddInteraction, onDeleteInteraction, userName }) => {
+            const [draggedCustomer, setDraggedCustomer] = useState(null);
+            const [dragOverStatus, setDragOverStatus] = useState(null);
+            const handleDragStart = (e, customer) => { setDraggedCustomer(customer); e.dataTransfer.effectAllowed = 'move'; };
+            const handleDragOver = (e, statusId) => { e.preventDefault(); setDragOverStatus(statusId); };
+            const handleDragLeave = (e) => { e.preventDefault(); setDragOverStatus(null); };
+            const handleDrop = (e, targetStatusId) => { e.preventDefault(); setDragOverStatus(null); if (draggedCustomer && draggedCustomer.statusId !== targetStatusId) { onCustomerUpdate(draggedCustomer.id, { statusId: targetStatusId }); } setDraggedCustomer(null); };
+            const customersByStatus = useMemo(() => { const grouped = {}; statuses.forEach(status => { grouped[status.id] = customers.filter(customer => customer.statusId === status.id); }); return grouped; }, [customers, statuses]);
+            const getStatusStats = (statusId) => { const statusCustomers = customersByStatus[statusId] || []; const totalValue = statusCustomers.reduce((sum, customer) => sum + (customer.salesValue || 0), 0); return { count: statusCustomers.length, totalValue: totalValue }; };
+            return React.createElement('div', { className: "kanban-container overflow-x-auto pb-6" }, React.createElement('div', { className: "flex space-x-4 min-w-max px-4" }, statuses.sort((a, b) => a.order - b.order).map(status => { const stats = getStatusStats(status.id); const isDragOver = dragOverStatus === status.id; return React.createElement('div', { key: status.id, className: `kanban-column flex-shrink-0 w-72 bg-gray-50 rounded-xl p-4 transition-all duration-300 ${isDragOver ? 'drag-over' : ''}`, onDragOver: (e) => handleDragOver(e, status.id), onDragLeave: handleDragLeave, onDrop: (e) => handleDrop(e, status.id) }, [ React.createElement('div', { key: 'header', className: "mb-4" }, [ React.createElement('div', { key: 'title-stats', className: "flex justify-between items-center mb-2" }, [ React.createElement('h3', { key: 'title', className: "font-semibold text-gray-800 flex items-center" }, [ React.createElement('span', { key: 'color-dot', className: `w-3 h-3 rounded-full ${status.color} mr-2` }), status.name ]), React.createElement('span', { key: 'count', className: "bg-white px-2 py-1 rounded-full text-sm font-medium text-gray-700" }, stats.count) ]), React.createElement('div', { key: 'stats', className: "text-xs text-gray-500 space-y-1" }, [ React.createElement('div', { key: 'value', className: "flex justify-between" }, [ React.createElement('span', { key: 'label' }, "Tổng giá trị:"), React.createElement('span', { key: 'amount', className: "font-medium text-green-600" }, formatCurrency(stats.totalValue)) ]), React.createElement('div', { key: 'avg', className: "flex justify-between" }, [ React.createElement('span', { key: 'label' }, "Trung bình:"), React.createElement('span', { key: 'amount' }, formatCurrency(stats.count > 0 ? stats.totalValue / stats.count : 0)) ]) ]) ]), React.createElement('div', { key: 'customers', className: "space-y-3 min-h-[200px] max-h-[70vh] overflow-y-auto custom-scrollbar" }, customersByStatus[status.id]?.map(customer => React.createElement('div', { key: customer.id, draggable: true, onDragStart: (e) => handleDragStart(e, customer), className: "transform transition-transform duration-200 hover:scale-[1.02]" }, React.createElement(CustomerCard, { customer: customer, statuses: statuses, onEdit: onCustomerEdit, onDelete: onCustomerDelete, onStatusChange: (customerId, newStatusId) => onCustomerUpdate(customerId, { statusId: newStatusId }), onAddInteraction: onAddInteraction, onDeleteInteraction: onDeleteInteraction, userName: userName })))), (!customersByStatus[status.id] || customersByStatus[status.id].length === 0) && React.createElement('div', { key: 'empty', className: "text-center py-8 text-gray-400" }, [ React.createElement('div', { key: 'icon', className: "text-2xl mb-2" }, "📋"), React.createElement('p', { key: 'text' }, "Không có khách hàng"), React.createElement('p', { key: 'hint', className: "text-xs mt-1" }, "Kéo khách hàng vào đây") ]) ]); }))); };
+        
+        const ListView = ({ customers, statuses, onCustomerEdit, onCustomerDelete }) => {
+            const [sortField, setSortField] = useState('lastContactDate');
+            const [sortDirection, setSortDirection] = useState('desc');
+            const [filterTier, setFilterTier] = useState('all');
+            const [filterStatus, setFilterStatus] = useState('all');
+            const processedCustomers = useMemo(() => { let filtered = [...customers]; if (filterTier !== 'all') { filtered = filtered.filter(customer => customer.tier === filterTier); } if (filterStatus !== 'all') { filtered = filtered.filter(customer => customer.statusId === filterStatus); } filtered.sort((a, b) => { let aValue = a[sortField]; let bValue = b[sortField]; if (sortField === 'lastContactDate' || sortField === 'createdDate') { aValue = aValue || 0; bValue = bValue || 0; } else if (sortField === 'name') { aValue = (aValue || '').toLowerCase(); bValue = (bValue || '').toLowerCase(); } else if (sortField === 'salesValue') { aValue = aValue || 0; bValue = bValue || 0; } if (sortDirection === 'asc') { return aValue < bValue ? -1 : aValue > bValue ? 1 : 0; } else { return aValue > bValue ? -1 : aValue < bValue ? 1 : 0; } }); return filtered; }, [customers, sortField, sortDirection, filterTier, filterStatus]);
+            const handleSort = (field) => { if (sortField === field) { setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc'); } else { setSortField(field); setSortDirection('desc'); } };
+            const SortableHeader = ({ field, children }) => { const isActive = sortField === field; return React.createElement('th', { className: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50", onClick: () => handleSort(field) }, [ React.createElement('div', { key: 'content', className: "flex items-center space-x-1" }, [ React.createElement('span', { key: 'text' }, children), isActive && React.createElement('span', { key: 'arrow', className: "text-gray-400" }, sortDirection === 'asc' ? '↑' : '↓') ]) ]); };
+            return React.createElement('div', { className: "bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" }, [ React.createElement('div', { key: 'filters', className: "p-4 border-b border-gray-200 bg-gray-50" }, [ React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-3 gap-4" }, [ React.createElement('div', { key: 'tier-filter' }, [ React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Lọc theo phân loại"), React.createElement('select', { value: filterTier, onChange: (e) => setFilterTier(e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, [ React.createElement('option', { key: 'all', value: "all" }, "Tất cả phân loại"), ...CUSTOMER_TIERS.map(tier => React.createElement('option', { key: tier.value, value: tier.value }, tier.label)) ]) ]), React.createElement('div', { key: 'status-filter' }, [ React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-1" }, "Lọc theo trạng thái"), React.createElement('select', { value: filterStatus, onChange: (e) => setFilterStatus(e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, [ React.createElement('option', { key: 'all', value: "all" }, "Tất cả trạng thái"), ...statuses.map(status => React.createElement('option', { key: status.id, value: status.id }, status.name)) ]) ]), React.createElement('div', { key: 'stats', className: "flex items-center justify-end" }, [ React.createElement('span', { className: "text-sm text-gray-600" }, `Hiển thị ${processedCustomers.length} / ${customers.length} khách hàng`) ]) ]) ]), React.createElement('div', { key: 'table', className: "overflow-x-auto" }, React.createElement('table', { className: "min-w-full divide-y divide-gray-200" }, [ React.createElement('thead', { key: 'header', className: "bg-gray-50" }, React.createElement('tr', {}, [ React.createElement(SortableHeader, { key: 'name', field: "name" }, "Tên khách hàng"), React.createElement(SortableHeader, { key: 'phone', field: "phone" }, "Điện thoại"), React.createElement(SortableHeader, { key: 'carModel', field: "carModel" }, "Dòng xe"), React.createElement(SortableHeader, { key: 'status', field: "statusId" }, "Trạng thái"), React.createElement(SortableHeader, { key: 'tier', field: "tier" }, "Phân loại"), React.createElement(SortableHeader, { key: 'salesValue', field: "salesValue" }, "Giá trị"), React.createElement(SortableHeader, { key: 'lastContactDate', field: "lastContactDate" }, "Liên hệ cuối"), React.createElement('th', { key: 'actions', className: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" }, "Thao tác") ])), React.createElement('tbody', { key: 'body', className: "bg-white divide-y divide-gray-200" }, processedCustomers.length === 0 ? React.createElement('tr', { key: 'empty' }, React.createElement('td', { colSpan: 8, className: "px-4 py-8 text-center text-gray-500" }, [ React.createElement('div', { key: 'icon', className: "text-4xl mb-2" }, "📋"), React.createElement('p', { key: 'text' }, "Không tìm thấy khách hàng nào"), React.createElement('p', { key: 'hint', className: "text-sm mt-1" }, "Thử thay đổi bộ lọc hoặc thêm khách hàng mới") ])) : processedCustomers.map(customer => { const status = statuses.find(s => s.id === customer.statusId); const tierConfig = CUSTOMER_TIERS.find(t => t.value === customer.tier); return React.createElement('tr', { key: customer.id, className: "hover:bg-gray-50 transition" }, [ React.createElement('td', { key: 'name', className: "px-4 py-4 whitespace-nowrap" }, [ React.createElement('div', { className: "font-medium text-gray-900" }, customer.name), customer.email && React.createElement('div', { className: "text-sm text-gray-500 truncate max-w-[200px]" }, customer.email) ]), React.createElement('td', { key: 'phone', className: "px-4 py-4 whitespace-nowrap text-sm text-gray-900" }, customer.phone), React.createElement('td', { key: 'carModel', className: "px-4 py-4 whitespace-nowrap text-sm text-gray-900" }, customer.carModel || '---'), React.createElement('td', { key: 'status', className: "px-4 py-4 whitespace-nowrap" }, React.createElement('span', { className: `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status?.color || 'bg-gray-100 text-gray-800'}` }, status?.name || '---')), React.createElement('td', { key: 'tier', className: "px-4 py-4 whitespace-nowrap text-sm" }, React.createElement('span', { className: tierConfig?.color || 'text-gray-600' }, tierConfig?.label?.split(' - ')[0] || customer.tier)), React.createElement('td', { key: 'salesValue', className: "px-4 py-4 whitespace-nowrap text-sm font-medium", style: { color: customer.salesValue > 0 ? '#059669' : '#6B7280' } }, formatCurrency(customer.salesValue)), React.createElement('td', { key: 'lastContactDate', className: "px-4 py-4 whitespace-nowrap text-sm text-gray-500" }, formatDate(customer.lastContactDate)), React.createElement('td', { key: 'actions', className: "px-4 py-4 whitespace-nowrap text-sm font-medium" }, [ React.createElement('button', { key: 'edit', onClick: () => onCustomerEdit(customer), className: "text-indigo-600 hover:text-indigo-900 mr-3" }, "Sửa"), React.createElement('button', { key: 'delete', onClick: () => onCustomerDelete(customer.id), className: "text-red-600 hover:text-red-900" }, "Xóa") ]) ]); })) ])) ]); };
+        
+        const Dashboard = ({ customers, statuses, carModels, reminders }) => {
+            const [selectedPeriod, setSelectedPeriod] = useState('month');
+            const metrics = useMemo(() => {
+                const now = Date.now();
+                const oneDay = 24 * 60 * 60 * 1000;
+                let periodStart;
+                switch (selectedPeriod) {
+                    case 'week': periodStart = now - 7 * oneDay; break;
+                    case 'month': periodStart = now - 30 * oneDay; break;
+                    case 'quarter': periodStart = now - 90 * oneDay; break;
+                    default: periodStart = now - 30 * oneDay;
+                }
+                const periodCustomers = customers.filter(c => c.createdDate >= periodStart);
+                const deliveredCustomers = customers.filter(c => { const status = statuses.find(s => s.id === c.statusId); return status?.type === 'delivered'; });
+                const potentialCustomers = customers.filter(c => { const status = statuses.find(s => s.id === c.statusId); return status?.type === 'pipeline' || status?.type === 'win'; });
+                const totalRevenue = deliveredCustomers.reduce((sum, c) => sum + (c.salesValue || 0), 0);
+                const potentialRevenue = potentialCustomers.reduce((sum, c) => sum + (c.salesValue || 0), 0);
+                const totalPotentialCount = potentialCustomers.length + deliveredCustomers.length;
+                const conversionRate = totalPotentialCount > 0 ? (deliveredCustomers.length / totalPotentialCount) * 100 : 0;
+                const tierDistribution = CUSTOMER_TIERS.map(tier => ({ tier: tier.value, label: tier.label, count: customers.filter(c => c.tier === tier.value).length, color: tier.color.replace('text-', 'bg-') }));
+                const statusDistribution = statuses.map(status => ({ status: status.name, count: customers.filter(c => c.statusId === status.id).length, color: status.color }));
+                const carModelDistribution = carModels.map(model => ({ model: model.name, count: customers.filter(c => c.carModel === model.name).length }));
+                return {
+                    totalCustomers: customers.length,
+                    periodNewCustomers: periodCustomers.length,
+                    deliveredCount: deliveredCustomers.length,
+                    totalPotentialCount,
+                    totalRevenue,
+                    potentialRevenue,
+                    conversionRate: Math.round(conversionRate),
+                    tierDistribution, statusDistribution, carModelDistribution,
+                    pendingReminders: reminders.filter(r => !r.completed).length
+                };
+            }, [customers, statuses, carModels, selectedPeriod, reminders]);
+
+            const tierChartRef = useRef(null);
+            const statusChartRef = useRef(null);
+            const carModelChartRef = useRef(null);
+
+            useEffect(() => {
+                [tierChartRef, statusChartRef, carModelChartRef].forEach(ref => { if (ref.current && ref.current.chartInstance) { ref.current.chartInstance.destroy(); } });
+                if (tierChartRef.current && metrics.tierDistribution.length > 0) { const ctx = tierChartRef.current.getContext('2d'); tierChartRef.current.chartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: metrics.tierDistribution.map(t => t.label.split(' - ')[0]), datasets: [{ data: metrics.tierDistribution.map(t => t.count), backgroundColor: metrics.tierDistribution.map(t => t.color === 'bg-red-600' ? '#DC2626' : t.color === 'bg-yellow-600' ? '#D97706' : t.color === 'bg-indigo-600' ? '#4F46E5' : '#6B7280'), borderWidth: 2, borderColor: '#FFFFFF' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } } } } }); }
+                if (statusChartRef.current && metrics.statusDistribution.length > 0) { const ctx = statusChartRef.current.getContext('2d'); statusChartRef.current.chartInstance = new Chart(ctx, { type: 'bar', data: { labels: metrics.statusDistribution.map(s => s.status), datasets: [{ label: 'Số lượng khách hàng', data: metrics.statusDistribution.map(s => s.count), backgroundColor: metrics.statusDistribution.map(s => s.color === 'bg-green-600' ? '#059669' : s.color === 'bg-red-600' ? '#DC2626' : s.color === 'bg-yellow-500' ? '#D97706' : s.color === 'bg-indigo-400' ? '#4F46E5' : s.color === 'bg-blue-600' ? '#2563EB' : '#000000'), borderWidth: 0, borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } } }); }
+                if (carModelChartRef.current && metrics.carModelDistribution.length > 0) { const ctx = carModelChartRef.current.getContext('2d'); carModelChartRef.current.chartInstance = new Chart(ctx, { type: 'pie', data: { labels: metrics.carModelDistribution.map(m => m.model), datasets: [{ data: metrics.carModelDistribution.map(m => m.count), backgroundColor: ['#4F46E5', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'], borderWidth: 2, borderColor: '#FFFFFF' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } } } } }); }
+                return () => { [tierChartRef, statusChartRef, carModelChartRef].forEach(ref => { if (ref.current && ref.current.chartInstance) { ref.current.chartInstance.destroy(); } }); };
+            }, [metrics]);
+
+            const MetricCard = ({ title, value, subtitle, icon, color = 'indigo' }) => {
+                const colorClasses = { indigo: 'bg-indigo-50 text-indigo-600', green: 'bg-green-50 text-green-600', red: 'bg-red-50 text-red-600', yellow: 'bg-yellow-50 text-yellow-600', blue: 'bg-blue-50 text-blue-600' };
+                return React.createElement('div', { className: "bg-white rounded-xl p-6 shadow-sm border border-gray-200" }, [ React.createElement('div', { key: 'header', className: "flex items-center justify-between mb-4" }, [ React.createElement('div', { key: 'icon', className: `p-3 rounded-lg ${colorClasses[color]}` }, icon), React.createElement('div', { key: 'period-badge', className: "text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded-full" }, selectedPeriod === 'week' ? '7 ngày' : selectedPeriod === 'month' ? '30 ngày' : '90 ngày') ]), React.createElement('div', { key: 'content' }, [ React.createElement('h3', { key: 'title', className: "text-sm font-medium text-gray-500 mb-1" }, title), React.createElement('p', { key: 'value', className: "text-2xl font-bold text-gray-800 mb-1" }, value), subtitle && React.createElement('p', { key: 'subtitle', className: "text-sm text-gray-500" }, subtitle) ]) ]);
+            };
+
+            return React.createElement('div', { className: "space-y-6" }, [ React.createElement('div', { key: 'period-selector', className: "flex justify-between items-center" }, [ React.createElement('h2', { key: 'title', className: "text-2xl font-bold text-gray-800" }, "Tổng quan CRM"), React.createElement('select', { key: 'period-select', value: selectedPeriod, onChange: (e) => setSelectedPeriod(e.target.value), className: "p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }, [ React.createElement('option', { key: 'week', value: "week" }, "7 ngày qua"), React.createElement('option', { key: 'month', value: "month" }, "30 ngày qua"), React.createElement('option', { key: 'quarter', value: "quarter" }, "90 ngày qua") ]) ]), React.createElement('div', { key: 'metrics-grid', className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" }, [ React.createElement(MetricCard, { key: 'total-customers', title: "Tổng khách hàng", value: metrics.totalCustomers, subtitle: `${metrics.periodNewCustomers} mới trong kỳ`, icon: React.createElement(Users, { className: "w-6 h-6" }), color: "indigo" }), React.createElement(MetricCard, { key: 'revenue', title: "Doanh số đã giao", value: formatCurrency(metrics.totalRevenue), subtitle: `${metrics.deliveredCount} xe đã giao`, icon: React.createElement(DollarSign, { className: "w-6 h-6" }), color: "green" }), React.createElement(MetricCard, { key: 'conversion', title: "Tỷ lệ chốt", value: `${metrics.conversionRate}%`, subtitle: `${metrics.deliveredCount} thành công / ${metrics.totalPotentialCount} KHTN`, icon: React.createElement(Target, { className: "w-6 h-6" }), color: "blue" }), React.createElement(MetricCard, { key: 'potential', title: "Tiềm năng", value: formatCurrency(metrics.potentialRevenue), subtitle: `${metrics.pendingReminders} nhắc hẹn cần xử lý`, icon: React.createElement(TrendingUp, { className: "w-6 h-6" }), color: "yellow" }) ]), React.createElement('div', { key: 'charts-grid', className: "grid grid-cols-1 lg:grid-cols-2 gap-6" }, [ React.createElement('div', { key: 'tier-chart', className: "bg-white rounded-xl p-6 shadow-sm border border-gray-200" }, [ React.createElement('h3', { key: 'title', className: "text-lg font-semibold text-gray-800 mb-4" }, "Phân bổ theo Phân loại"), React.createElement('div', { key: 'chart', className: "chart-container" }, React.createElement('canvas', { ref: tierChartRef })) ]), React.createElement('div', { key: 'status-chart', className: "bg-white rounded-xl p-6 shadow-sm border border-gray-200" }, [ React.createElement('h3', { key: 'title', className: "text-lg font-semibold text-gray-800 mb-4" }, "Phân bổ theo Trạng thái"), React.createElement('div', { key: 'chart', className: "chart-container" }, React.createElement('canvas', { ref: statusChartRef })) ]) ]), React.createElement('div', { key: 'car-model-chart', className: "bg-white rounded-xl p-6 shadow-sm border border-gray-200" }, [ React.createElement('h3', { key: 'title', className: "text-lg font-semibold text-gray-800 mb-4" }, "Phân bổ theo Dòng xe"), React.createElement('div', { key: 'chart', className: "chart-container" }, React.createElement('canvas', { ref: carModelChartRef })) ]) ]);
+        };
+
+        const SettingsPanel = ({ statuses, carModels, customerSources, onSettingsUpdate, onDataExport, onDataImport, onDataReset, userName, onUserNameUpdate }) => {
+            const [activeTab, setActiveTab] = useState('general');
+            const [newCarModel, setNewCarModel] = useState('');
+            const [newSource, setNewSource] = useState('');
+            const [localUserName, setLocalUserName] = useState(userName);
+            const handleAddCarModel = () => { if (!newCarModel.trim()) { alert('Vui lòng nhập tên dòng xe'); return; } const model = { id: 'model_' + Date.now(), name: newCarModel }; onSettingsUpdate('carModels', [...carModels, model]); setNewCarModel(''); };
+            const handleDeleteCarModel = (modelId) => { if (carModels.length <= 1) { alert('Cần ít nhất một dòng xe trong hệ thống'); return; } onSettingsUpdate('carModels', carModels.filter(m => m.id !== modelId)); };
+            const handleAddSource = () => { if (!newSource.trim()) { alert('Vui lòng nhập tên nguồn khách hàng'); return; } const source = { id: 'source_' + Date.now(), name: newSource }; onSettingsUpdate('customerSources', [...customerSources, source]); setNewSource(''); };
+            const handleDeleteSource = (sourceId) => { if (customerSources.length <= 1) { alert('Cần ít nhất một nguồn khách hàng trong hệ thống'); return; } onSettingsUpdate('customerSources', customerSources.filter(s => s.id !== sourceId)); };
+            const handleFileImport = (e) => { const file = e.target.files[0]; if (file) { onDataImport(file); } e.target.value = ''; };
+            const handleUserNameSave = () => { onUserNameUpdate(localUserName); alert('Đã cập nhật tên nhân viên thành công!'); };
+            const tabs = [ { id: 'general', name: '📝 Thông tin chung', icon: SettingsIcon }, { id: 'cars', name: '🚗 Dòng xe', icon: Car }, { id: 'sources', name: '📚 Nguồn khách', icon: Users }, { id: 'data', name: '💾 Dữ liệu', icon: Database } ];
+            return React.createElement('div', { className: "bg-white rounded-xl shadow-sm border border-gray-200" }, [ React.createElement('div', { key: 'tabs', className: "border-b border-gray-200" }, React.createElement('div', { className: "flex overflow-x-auto custom-scrollbar" }, tabs.map(tab => React.createElement('button', { key: tab.id, onClick: () => setActiveTab(tab.id), className: `flex items-center px-6 py-4 border-b-2 font-medium text-sm whitespace-nowrap transition ${activeTab === tab.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}` }, [ React.createElement(tab.icon, { key: 'icon', className: "w-4 h-4 mr-2" }), tab.name ])))), React.createElement('div', { key: 'content', className: "p-6" }, (() => {
+                switch (activeTab) {
+                    case 'general': return React.createElement('div', { className: "space-y-6" }, [ React.createElement('div', { key: 'user-info' }, [ React.createElement('h3', { className: "text-lg font-semibold text-gray-800 mb-4" }, "Thông tin Nhân viên"), React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 gap-4" }, [ React.createElement('div', {}, [ React.createElement('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, "Tên nhân viên"), React.createElement('input', { type: "text", value: localUserName, onChange: (e) => setLocalUserName(e.target.value), className: "w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500", placeholder: "Nhập tên nhân viên" }) ]), React.createElement('div', { className: "flex items-end" }, React.createElement('button', { onClick: handleUserNameSave, className: "px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition" }, "Lưu tên")) ]) ]), React.createElement('div', { key: 'app-info' }, [ React.createElement('h3', { className: "text-lg font-semibold text-gray-800 mb-4" }, "Thông tin Ứng dụng"), React.createElement('div', { className: "bg-gray-50 rounded-lg p-4" }, [ React.createElement('div', { className: "grid grid-cols-2 gap-4 text-sm" }, [ React.createElement('div', {}, [ React.createElement('span', { className: "text-gray-500" }, "Phiên bản:"), React.createElement('p', { className: "font-medium" }, "CRM Sales MG 2.1") ]), React.createElement('div', {}, [ React.createElement('span', { className: "text-gray-500" }, "Lưu trữ:"), React.createElement('p', { className: "font-medium" }, "Local Storage") ]), React.createElement('div', {}, [ React.createElement('span', { className: "text-gray-500" }, "Tổng trạng thái:"), React.createElement('p', { className: "font-medium" }, statuses.length) ]), React.createElement('div', {}, [ React.createElement('span', { className: "text-gray-500" }, "Tổng dòng xe:"), React.createElement('p', { className: "font-medium" }, carModels.length) ]) ]) ]) ]) ]);
+                    case 'cars': return React.createElement('div', { className: "space-y-6" }, [ React.createElement('div', { key: 'add-car' }, [ React.createElement('h3', { className: "text-lg font-semibold text-gray-800 mb-4" }, "Thêm dòng xe mới"), React.createElement('div', { className: "flex space-x-2" }, [ React.createElement('input', { type: "text", value: newCarModel, onChange: (e) => setNewCarModel(e.target.value), className: "flex-1 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500", placeholder: "Nhập tên dòng xe mới" }), React.createElement('button', { onClick: handleAddCarModel, className: "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition" }, "Thêm") ]) ]), React.createElement('div', { key: 'car-list' }, [ React.createElement('h3', { className: "text-lg font-semibold text-gray-800 mb-4" }, "Danh sách dòng xe"), React.createElement('div', { className: "space-y-3" }, carModels.map(model => React.createElement('div', { key: model.id, className: "flex items-center justify-between p-3 border border-gray-200 rounded-lg" }, [ React.createElement('span', { className: "font-medium" }, model.name), carModels.length > 1 && React.createElement('button', { onClick: () => handleDeleteCarModel(model.id), className: "text-red-400 hover:text-red-600 transition" }, React.createElement(Trash2, { className: "w-4 h-4" })) ]))) ]) ]);
+                    case 'sources': return React.createElement('div', { className: "space-y-6" }, [ React.createElement('div', { key: 'add-source' }, [ React.createElement('h3', { className: "text-lg font-semibold text-gray-800 mb-4" }, "Thêm nguồn khách hàng mới"), React.createElement('div', { className: "flex space-x-2" }, [ React.createElement('input', { type: "text", value: newSource, onChange: (e) => setNewSource(e.target.value), className: "flex-1 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500", placeholder: "Nhập tên nguồn khách hàng mới" }), React.createElement('button', { onClick: handleAddSource, className: "px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition" }, "Thêm") ]) ]), React.createElement('div', { key: 'source-list' }, [ React.createElement('h3', { className: "text-lg font-semibold text-gray-800 mb-4" }, "Danh sách nguồn khách hàng"), React.createElement('div', { className: "space-y-3" }, customerSources.map(source => React.createElement('div', { key: source.id, className: "flex items-center justify-between p-3 border border-gray-200 rounded-lg" }, [ React.createElement('span', { className: "font-medium" }, source.name), customerSources.length > 1 && React.createElement('button', { onClick: () => handleDeleteSource(source.id), className: "text-red-400 hover:text-red-600 transition" }, React.createElement(Trash2, { className: "w-4 h-4" })) ]))) ]) ]);
+                    case 'data': return React.createElement('div', { className: "space-y-6" }, [ React.createElement('div', { key: 'export' }, [ React.createElement('h3', { className: "text-lg font-semibold text-gray-800 mb-4" }, "Xuất dữ liệu"), React.createElement('p', { className: "text-gray-600 mb-4" }, "Tải toàn bộ dữ liệu CRM về máy tính của bạn dưới dạng file JSON."), React.createElement('button', { onClick: onDataExport, className: "px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center" }, [ React.createElement(Download, { className: "w-4 h-4 mr-2" }), "Xuất dữ liệu" ]) ]), React.createElement('div', { key: 'import' }, [ React.createElement('h3', { className: "text-lg font-semibold text-gray-800 mb-4" }, "Nhập dữ liệu"), React.createElement('p', { className: "text-gray-600 mb-4" }, "Khôi phục dữ liệu từ file backup. Lưu ý: Dữ liệu hiện tại sẽ bị ghi đè."), React.createElement('div', { className: "flex items-center space-x-4" }, [ React.createElement('input', { type: "file", accept: ".json", onChange: handleFileImport, className: "flex-1 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }) ]) ]), React.createElement('div', { key: 'reset', className: "border-t border-gray-200 pt-6" }, [ React.createElement('h3', { className: "text-lg font-semibold text-red-800 mb-4" }, "Xóa toàn bộ dữ liệu"), React.createElement('p', { className: "text-red-600 mb-4" }, "Hành động này sẽ xóa toàn bộ dữ liệu và không thể hoàn tác. Hãy chắc chắn bạn đã xuất dữ liệu backup."), React.createElement('button', { onClick: onDataReset, className: "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center" }, [ React.createElement(Trash2, { className: "w-4 h-4 mr-2" }), "Xóa toàn bộ dữ liệu" ]) ]) ]);
+                    default: return null;
+                }
+            })()) ]);
+        };
+        
+        const ReminderNotification = ({ reminders, onReminderClick }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const pendingReminders = reminders.filter(rem => !rem.completed);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const todayTimestamp = today.getTime();
+
+            const overdueReminders = pendingReminders.filter(rem => rem.dueDate < todayTimestamp);
+            const todayReminders = pendingReminders.filter(rem => rem.dueDate >= todayTimestamp && rem.dueDate < todayTimestamp + 24 * 60 * 60 * 1000);
+            const upcomingReminders = pendingReminders.filter(rem => rem.dueDate >= todayTimestamp + 24 * 60 * 60 * 1000);
+
+            if (pendingReminders.length === 0) {
+                return React.createElement('button', { className: "p-2 text-gray-400 hover:text-gray-600 transition" }, React.createElement(Bell, { className: "w-6 h-6" }));
+            }
+
+            return React.createElement('div', { className: "relative" }, [
+                React.createElement('button', { key: 'bell-icon', onClick: () => setIsOpen(!isOpen), className: "p-2 text-gray-400 hover:text-gray-600 transition relative" }, [
+                    React.createElement(Bell, { className: "w-6 h-6" }),
+                    pendingReminders.length > 0 && React.createElement('span', { className: "notification-badge" }, pendingReminders.length)
+                ]),
+                isOpen && React.createElement('div', { key: 'panel', className: "absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 border border-gray-200" }, [
+                    React.createElement('div', { key: 'header', className: "p-4 border-b border-gray-200" }, React.createElement('h3', { className: "font-semibold text-gray-800" }, `Nhắc hẹn (${pendingReminders.length})`)),
+                    React.createElement('div', { key: 'content', className: "max-h-96 overflow-y-auto custom-scrollbar" }, [
+                        overdueReminders.length > 0 && [
+                            React.createElement('div', { key: 'overdue-header', className: "px-4 py-2 bg-red-50 text-red-700 font-semibold text-sm" }, `QUÁ HẠN (${overdueReminders.length})`),
+                            ...overdueReminders.map(reminder => React.createElement('div', { key: reminder.id, className: "p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer", onClick: () => { onReminderClick(reminder); setIsOpen(false); } }, [ React.createElement('p', { className: "font-medium text-gray-800 text-sm" }, reminder.title), React.createElement('p', { className: "text-xs text-red-600 mt-1" }, `Hạn: ${formatDate(reminder.dueDate)}`) ]))
+                        ],
+                        todayReminders.length > 0 && [
+                             React.createElement('div', { key: 'today-header', className: "px-4 py-2 bg-yellow-50 text-yellow-700 font-semibold text-sm" }, `HÔM NAY (${todayReminders.length})`),
+                            ...todayReminders.map(reminder => React.createElement('div', { key: reminder.id, className: "p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer", onClick: () => { onReminderClick(reminder); setIsOpen(false); } }, [ React.createElement('p', { className: "font-medium text-gray-800 text-sm" }, reminder.title), React.createElement('p', { className: "text-xs text-yellow-600 mt-1" }, "Hôm nay") ]))
+                        ],
+                        upcomingReminders.length > 0 && [
+                            React.createElement('div', { key: 'upcoming-header', className: "px-4 py-2 bg-blue-50 text-blue-700 font-semibold text-sm" }, `SẮP TỚI (${upcomingReminders.length})`),
+                            ...upcomingReminders.map(reminder => React.createElement('div', { key: reminder.id, className: "p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer", onClick: () => { onReminderClick(reminder); setIsOpen(false); } }, [ React.createElement('p', { className: "font-medium text-gray-800 text-sm" }, reminder.title), React.createElement('p', { className: "text-xs text-blue-600 mt-1" }, `Hạn: ${formatDate(reminder.dueDate)}`) ]))
+                        ]
+                    ]),
+                    React.createElement('div', { key: 'footer', className: "p-2 border-t border-gray-200 text-center" }, React.createElement('button', { onClick: () => setIsOpen(false), className: "text-sm text-blue-600 hover:text-blue-800" }, "Đóng"))
+                ])
+            ]);
+        };
+        
+        const App = () => {
+            const [customers, setCustomers] = useState([]);
+            const [statuses, setStatuses] = useState([]);
+            const [carModels, setCarModels] = useState([]);
+            const [customerSources, setCustomerSources] = useState([]);
+            const [reminders, setReminders] = useState([]);
+            const [salesGoals, setSalesGoals] = useState([]);
+            const [userName, setUserName] = useState('');
+            const [activeView, setActiveView] = useState('dashboard');
+            const [isLoading, setIsLoading] = useState(true);
+            const [showCustomerForm, setShowCustomerForm] = useState(false);
+            const [editingCustomer, setEditingCustomer] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, customerId: null });
+
+            const searchTimeoutRef = useRef(null);
+            const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+            useEffect(() => {
+                const loadData = () => {
+                    try {
+                        const data = StorageService.getAllData();
+                        if (data.customers.length === 0 && data.statuses.length === 0) {
+                            const mockData = generateMockData();
+                            setCustomers(mockData.customers); setStatuses(mockData.statuses); setCarModels(mockData.carModels); setCustomerSources(mockData.customerSources); setReminders(mockData.reminders); setSalesGoals(mockData.salesGoals); setUserName(mockData.userName || '');
+                            StorageService.saveAllData(mockData);
+                        } else {
+                            setCustomers(data.customers || []); setStatuses(data.statuses || []); setCarModels(data.carModels || []); setCustomerSources(data.customerSources || []); setReminders(data.reminders || []); setSalesGoals(data.salesGoals || []); setUserName(data.userName || '');
+                        }
+                    } catch (error) { console.error('Lỗi khi tải dữ liệu:', error); const mockData = generateMockData(); setCustomers(mockData.customers); setStatuses(mockData.statuses); setCarModels(mockData.carModels); setCustomerSources(mockData.customerSources); setReminders(mockData.reminders); setSalesGoals(mockData.salesGoals); } 
+                    finally { setIsLoading(false); }
+                };
+                loadData();
+            }, []);
+
+            useEffect(() => { if (!isLoading) { const data = { customers, statuses, carModels, customerSources, reminders, salesGoals, userName }; StorageService.saveAllData(data); } }, [customers, statuses, carModels, customerSources, reminders, salesGoals, userName, isLoading]);
+
+            const handleSearchChange = (term) => {
+                setSearchTerm(term);
+                if (searchTimeoutRef.current) {
+                    clearTimeout(searchTimeoutRef.current);
+                }
+                searchTimeoutRef.current = setTimeout(() => {
+                    setDebouncedSearchTerm(term);
+                }, 300);
+            };
+
+            const filteredCustomers = useMemo(() => {
+                if (!debouncedSearchTerm.trim()) return customers;
+                const term = debouncedSearchTerm.toLowerCase();
+                return customers.filter(c => c.name.toLowerCase().includes(term) || c.phone.includes(term) || (c.email && c.email.toLowerCase().includes(term)) || (c.carModel && c.carModel.toLowerCase().includes(term)) || (c.city && c.city.toLowerCase().includes(term)));
+            }, [customers, debouncedSearchTerm]);
+
+            const handleAddCustomer = (customerData) => { const newCustomer = { ...customerData, id: 'cust_' + Date.now(), interactions: [] }; setCustomers(prev => [...prev, newCustomer]); };
+            const handleEditCustomer = (customerData) => { setCustomers(prev => prev.map(c => c.id === editingCustomer.id ? { ...c, ...customerData } : c)); setEditingCustomer(null); };
+            const handleSaveCustomer = (customerData) => { if (editingCustomer) { handleEditCustomer(customerData); } else { handleAddCustomer(customerData); } };
+            const handleUpdateCustomer = (customerId, updates) => { setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, ...updates, lastContactDate: Date.now() } : c)); };
+            const handleDeleteCustomer = (customerId) => { setCustomers(prev => prev.filter(c => c.id !== customerId)); setDeleteConfirm({ isOpen: false, customerId: null }); };
+            const openEditCustomer = (customer) => { setEditingCustomer(customer); setShowCustomerForm(true); };
+            const openAddCustomer = () => { setEditingCustomer(null); setShowCustomerForm(true); };
+            const closeCustomerForm = () => { setShowCustomerForm(false); setEditingCustomer(null); };
+            const handleAddInteraction = (customerId, interaction) => { setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, interactions: [...(c.interactions || []), interaction], lastContactDate: Date.now() } : c)); };
+            const handleDeleteInteraction = (customerId, interactionId) => { setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, interactions: (c.interactions || []).filter(i => i.id !== interactionId) } : c)); };
+            const handleSettingsUpdate = (type, data) => { switch (type) { case 'carModels': setCarModels(data); break; case 'customerSources': setCustomerSources(data); break; default: break; } };
+            const handleDataExport = () => { StorageService.exportData(); };
+            const handleDataImport = (file) => { StorageService.importData(file, (data) => { setCustomers(data.customers || []); setStatuses(data.statuses || []); setCarModels(data.carModels || []); setCustomerSources(data.customerSources || []); setReminders(data.reminders || []); setSalesGoals(data.salesGoals || []); setUserName(data.userName || ''); alert('Nhập dữ liệu thành công!'); }); };
+            const handleDataReset = () => { if (StorageService.resetData()) { const mockData = generateMockData(); setCustomers(mockData.customers); setStatuses(mockData.statuses); setCarModels(mockData.carModels); setCustomerSources(mockData.customerSources); setReminders(mockData.reminders); setSalesGoals(mockData.salesGoals); setUserName(mockData.userName || ''); alert('Đã xóa toàn bộ dữ liệu và khôi phục về mẫu!'); } };
+            const handleUserNameUpdate = (name) => { setUserName(name); };
+            const handleReminderClick = (reminder) => { const customer = customers.find(c => c.id === reminder.customerId); if (customer) { openEditCustomer(customer); } else { alert(`Không tìm thấy khách hàng cho nhắc hẹn: ${reminder.title}`); } };
+            const navItems = [ { id: 'dashboard', label: 'Tổng quan', icon: BarChartIcon }, { id: 'kanban', label: 'Pipeline', icon: KanbanSquare }, { id: 'list', label: 'Danh sách', icon: List }, { id: 'settings', label: 'Cài đặt', icon: SettingsIcon } ];
+
+            if (isLoading) { return React.createElement('div', { className: "min-h-screen bg-gray-50 flex items-center justify-center" }, React.createElement(LoadingSpinner)); }
+            
+            return React.createElement('div', { className: "min-h-screen bg-gray-50" }, [
+                React.createElement('header', { key: 'header', className: "bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40" }, [
+                    React.createElement('div', { className: "px-6 py-4" }, [
+                        React.createElement('div', { className: "flex justify-between items-center" }, [
+                            React.createElement('div', { className: "flex items-center space-x-4" }, [
+                                React.createElement('div', { className: "flex items-center space-x-3" }, [
+                                    React.createElement(Briefcase, { key: 'logo-icon', className: "w-8 h-8 text-indigo-600" }),
+                                    React.createElement('div', {}, [
+                                        React.createElement('h1', { key: 'app-title', className: "text-xl font-bold text-gray-800" }, "CRM Sales MG"),
+                                        userName && React.createElement('p', { key: 'user-name-display', className: "text-sm text-gray-500" }, `Nhân viên: ${userName}`)
+                                    ])
+                                ]),
+                                React.createElement('div', { className: "relative w-80" }, [
+                                    React.createElement('input', { type: "text", placeholder: "Tìm kiếm khách hàng...", value: searchTerm, onChange: (e) => handleSearchChange(e.target.value), className: "w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" }),
+                                    React.createElement('div', { className: "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" }, React.createElement('span', { className: "text-gray-400" }, "🔍"))
+                                ])
+                            ]),
+                            React.createElement('div', { className: "flex items-center space-x-3" }, [
+                                React.createElement('button', { onClick: openAddCustomer, className: "px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition flex items-center" }, [ React.createElement(Plus, { className: "w-4 h-4 mr-2" }), "Thêm khách hàng" ]),
+                                React.createElement(ReminderNotification, { reminders: reminders, onReminderClick: handleReminderClick })
+                            ])
+                        ])
+                    ])
+                ]),
+                React.createElement('nav', { key: 'navigation', className: "bg-white border-b border-gray-200 sticky top-16 z-30" }, 
+                    React.createElement('div', { className: "px-6" }, React.createElement('div', { className: "flex space-x-8" }, navItems.map(item => React.createElement('button', { key: item.id, onClick: () => setActiveView(item.id), className: `py-4 px-1 border-b-2 font-medium text-sm transition ${activeView === item.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}` }, [ React.createElement(item.icon, { className: "w-4 h-4 mr-2 inline" }), item.label ]))))
+                ),
+                React.createElement('main', { key: 'main', className: "p-6" }, 
+                    (() => {
+                        switch (activeView) {
+                            case 'dashboard': return React.createElement(Dashboard, { customers: customers, statuses: statuses, carModels: carModels, reminders: reminders });
+                            case 'kanban': return React.createElement(KanbanView, { customers: filteredCustomers, statuses: statuses, onCustomerEdit: openEditCustomer, onCustomerUpdate: handleUpdateCustomer, onCustomerDelete: (id) => setDeleteConfirm({ isOpen: true, customerId: id }), onAddInteraction: handleAddInteraction, onDeleteInteraction: handleDeleteInteraction, userName: userName });
+                            case 'list': return React.createElement(ListView, { customers: filteredCustomers, statuses: statuses, onCustomerEdit: openEditCustomer, onCustomerDelete: (id) => setDeleteConfirm({ isOpen: true, customerId: id }) });
+                            case 'settings': return React.createElement(SettingsPanel, { statuses: statuses, carModels: carModels, customerSources: customerSources, onSettingsUpdate: handleSettingsUpdate, onDataExport: handleDataExport, onDataImport: handleDataImport, onDataReset: handleDataReset, userName: userName, onUserNameUpdate: handleUserNameUpdate });
+                            default: return React.createElement(Dashboard, { customers: customers, statuses: statuses, carModels: carModels, reminders: reminders });
+                        }
+                    })()
+                ),
+                React.createElement(CustomerForm, { key: 'customer-form', isOpen: showCustomerForm, onClose: closeCustomerForm, onSave: handleSaveCustomer, customer: editingCustomer, statuses: statuses, carModels: carModels, customerSources: customerSources }),
+                React.createElement(ConfirmationModal, { key: 'delete-confirm', isOpen: deleteConfirm.isOpen, title: "Xác nhận xóa khách hàng", message: "Bạn có chắc chắn muốn xóa khách hàng này? Hành động này không thể hoàn tác.", onConfirm: () => handleDeleteCustomer(deleteConfirm.customerId), onCancel: () => setDeleteConfirm({ isOpen: false, customerId: null }) })
+            ]);
+        };
+
+        const AppWithErrorBoundary = () => { return React.createElement(ErrorBoundary, {}, React.createElement(App)); };
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(AppWithErrorBoundary));
+    </script>
+</body>
+</html>
