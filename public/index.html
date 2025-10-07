@@ -12,7 +12,6 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <!-- THÊM MỚI: Thư viện xác thực người dùng của Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
     <style>
@@ -21,7 +20,7 @@
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; }
-        @keyframes fade-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; translateY(0); } }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
     </style>
 </head>
@@ -38,7 +37,6 @@
         };
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        // THÊM MỚI: Khởi tạo dịch vụ xác thực
         const auth = firebase.auth();
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         console.log("Firebase Services Initialized!");
@@ -47,14 +45,13 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        class ErrorBoundary extends React.Component { /* ... Giữ nguyên ... */ constructor(props) { super(props); this.state = { hasError: false, error: null }; } static getDerivedStateFromError(error) { return { hasError: true, error }; } componentDidCatch(error, errorInfo) { console.error('Lỗi ứng dụng:', error, errorInfo); } render() { if (this.state.hasError) { return React.createElement('div', { className: "min-h-screen bg-gray-100 flex items-center justify-center p-4" }, React.createElement('div', { className: "bg-white p-6 rounded-lg shadow-md max-w-sm text-center" }, [ React.createElement('h2', { key: 'title', className: "text-lg font-bold text-red-600 mb-2" }, "Đã xảy ra lỗi"), React.createElement('p', { key: 'message', className: "text-gray-700" }, "Ứng dụng gặp sự cố. Vui lòng tải lại trang."), React.createElement('button', { key: 'reload-button', onClick: () => window.location.reload(), className: "mt-4 px-4 py-2 bg-indigo-600 text-white rounded" }, "Tải lại") ])); } return this.props.children; } }
+        class ErrorBoundary extends React.Component { constructor(props) { super(props); this.state = { hasError: false, error: null }; } static getDerivedStateFromError(error) { return { hasError: true, error }; } componentDidCatch(error, errorInfo) { console.error('Lỗi ứng dụng:', error, errorInfo); } render() { if (this.state.hasError) { return React.createElement('div', { className: "min-h-screen bg-gray-100 flex items-center justify-center p-4" }, React.createElement('div', { className: "bg-white p-6 rounded-lg shadow-md max-w-sm text-center" }, [ React.createElement('h2', { key: 'title', className: "text-lg font-bold text-red-600 mb-2" }, "Đã xảy ra lỗi"), React.createElement('p', { key: 'message', className: "text-gray-700" }, "Ứng dụng gặp sự cố. Vui lòng tải lại trang."), React.createElement('button', { key: 'reload-button', onClick: () => window.location.reload(), className: "mt-4 px-4 py-2 bg-indigo-600 text-white rounded" }, "Tải lại") ])); } return this.props.children; } }
+        
         const { useState, useEffect, useCallback, useMemo, useRef } = React;
 
-        // ==================== COMPONENTS ====================
         const LoadingSpinner = () => { return React.createElement('div', { className: "flex justify-center items-center py-8" }, [ React.createElement('div', { key: "spinner-div", className: "loading-spinner" }), React.createElement('span', { key: "spinner-text", className: "ml-3 text-gray-600" }, "Đang tải...") ]); };
         const Modal = ({ isOpen, title, onClose, children, maxWidth = 'max-w-lg' }) => { if (!isOpen) return null; return React.createElement('div', { className: "fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-center items-center p-4", onClick: (e) => { if(e.target === e.currentTarget) onClose() } }, React.createElement('div', { className: `bg-white rounded-lg shadow-xl w-full ${maxWidth} animate-fade-in` }, [ React.createElement('div', { key: 'header', className: "p-4 border-b flex justify-between items-center" }, [ React.createElement('h3', { key: 'title', className: "text-lg font-bold" }, title), React.createElement('button', { key: 'close', onClick: onClose, className: "text-gray-500 hover:text-gray-800" }, "✖") ]), React.createElement('div', { key: 'content', className: "p-4 max-h-[80vh] overflow-y-auto custom-scrollbar" }, children) ])); };
         
-        // THÊM MỚI: Màn hình đăng nhập
         const LoginScreen = ({ onLogin, onGoogleLogin }) => {
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
@@ -88,7 +85,13 @@
                         React.createElement('div', { key: 'text-wrapper', className: "relative flex justify-center text-sm" }, React.createElement('span', { className: "px-2 bg-white text-gray-500" }, "Hoặc tiếp tục với"))
                     ]),
                     React.createElement('button', { key: 'google-btn', onClick: onGoogleLogin, className: "w-full flex items-center justify-center py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition" }, [
-                        React.createElement('svg', { key: 'google-icon', className: "w-5 h-5 mr-2", viewBox: "0 0 48 48" }, React.createElement('path', { fill: "#EA4335", d: "M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" }), React.createElement('path', { fill: "#4285F4", d: "M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" }), React.createElement('path', { fill: "#FBBC05", d: "M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" }), React.createElement('path', { fill: "#34A853", d: "M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" }), React.createElement('path', { fill: "none", d: "M0 0h48v48H0z" })),
+                        React.createElement('svg', { key: 'google-icon', className: "w-5 h-5 mr-2", viewBox: "0 0 48 48" }, [
+                           React.createElement('path', { key: 'g1', fill: "#EA4335", d: "M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" }),
+                           React.createElement('path', { key: 'g2', fill: "#4285F4", d: "M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" }),
+                           React.createElement('path', { key: 'g3', fill: "#FBBC05", d: "M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" }),
+                           React.createElement('path', { key: 'g4', fill: "#34A853", d: "M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" }),
+                           React.createElement('path', { key: 'g5', fill: "none", d: "M0 0h48v48H0z" })
+                        ]),
                         React.createElement('span', { key: 'google-text' }, "Đăng nhập với Google")
                     ]),
                     React.createElement('p', { key: 'toggle-form', className: "text-center text-sm text-gray-600" }, 
@@ -99,101 +102,161 @@
             );
         };
         
-        // ... Các component khác (CustomerCard, KanbanView, ...) giữ nguyên
-        // nhưng sẽ được chỉnh sửa để nhận `user` và hiển thị thông tin người tạo
-        const InteractionHistory = ({ interactions, onAddInteraction, onDeleteInteraction, user }) => {
-            const [newInteraction, setNewInteraction] = useState({ type: 'call', notes: '', duration: 0, outcome: 'neutral' });
-            const [isAdding, setIsAdding] = useState(false);
-            const interactionTypes = [ { value: 'call', label: '📞 Cuộc gọi' }, { value: 'email', label: '✉️ Email' }, { value: 'meeting', label: '🤝 Gặp mặt' }, { value: 'test_drive', label: '🚗 Lái thử' }, { value: 'quotation', label: '💰 Báo giá' }, { value: 'other', label: '📝 Khác' } ];
-
-            const handleAddInteraction = () => {
-                if (!newInteraction.notes.trim()) return;
-                const interaction = {
-                    id: 'int-' + Date.now(),
-                    type: newInteraction.type,
-                    date: Date.now(),
-                    notes: newInteraction.notes,
-                    duration: newInteraction.duration || 0,
-                    outcome: newInteraction.outcome,
-                    // Thêm thông tin người tạo
-                    createdBy: {
-                        uid: user.uid,
-                        name: user.displayName || user.email,
-                    }
-                };
-                onAddInteraction(interaction);
-                setNewInteraction({ type: 'call', notes: '', duration: 0, outcome: 'neutral' });
-                setIsAdding(false);
-            };
-
-            // ... giao diện component giữ nguyên nhưng phần hiển thị người tạo sẽ lấy từ `interaction.createdBy.name`
-            return React.createElement('div', { className: "space-y-4" }, [
-                React.createElement('div', { key: 'header', className: "flex justify-between items-center" }, [
-                    React.createElement('h4', { key: 'title', className: "font-semibold" }, `Lịch sử (${interactions.length})`),
-                    React.createElement('button', { key: 'add-button', onClick: () => setIsAdding(!isAdding), className: "px-3 py-1 bg-indigo-600 text-white text-sm rounded-lg" }, "Thêm")
-                ]),
-                isAdding && React.createElement('div', { /* ... form thêm interaction */ }),
-                React.createElement('div', { key: 'list', className: "space-y-3 max-h-80 overflow-y-auto" }, 
-                    interactions.length === 0 ? 
-                    React.createElement('p', { className: 'text-center text-gray-500 py-4'}, 'Chưa có tương tác.') :
-                    interactions.sort((a, b) => b.date - a.date).map(interaction => {
-                        return React.createElement('div', { key: interaction.id, className: "p-3 border rounded-lg bg-white" }, [
-                            /* ... */
-                            React.createElement('p', { key: 'user', className: "text-xs text-gray-400 mt-1" }, `bởi: ${interaction.createdBy?.name || 'Không rõ'}`)
-                        ]);
-                    })
-                )
-            ]);
-        };
-
+        // SỬA LỖI: Xây dựng lại AppContent đầy đủ
         const AppContent = ({ user, onLogout }) => {
-            // ... Toàn bộ state và logic của App cũ được chuyển vào đây ...
             const [customers, setCustomers] = useState([]);
-            // ... và các state khác ...
-
+            const [statuses, setStatuses] = useState([]);
+            const [carModels, setCarModels] = useState([]);
+            const [customerSources, setCustomerSources] = useState([]);
+            const [reminders, setReminders] = useState([]);
+            const [userName, setUserName] = useState(user.displayName || user.email);
+            const [activeView, setActiveView] = useState('dashboard');
+            const [isLoading, setIsLoading] = useState(true);
+            const [showCustomerForm, setShowCustomerForm] = useState(false);
+            const [editingCustomer, setEditingCustomer] = useState(null);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, customerId: null });
+            const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+            const searchTimeoutRef = useRef(null);
+            
             useEffect(() => {
-                // Logic tải dữ liệu từ Firestore
                 const unsubscribe = db.collection('data').doc('crmData')
                     .onSnapshot(doc => {
+                        setIsLoading(true);
                         if (doc.exists) {
                             const data = doc.data();
                             setCustomers(data.customers || []);
-                            // ... set các state khác
+                            setStatuses(data.statuses || []);
+                            setCarModels(data.carModels || []);
+                            setCustomerSources(data.customerSources || []);
+                            setReminders(data.reminders || []);
                         } else {
-                            // Tạo dữ liệu mẫu nếu chưa có
+                           // Có thể thêm logic tạo dữ liệu mẫu ở đây nếu cần
+                           console.log("No data document found!");
                         }
+                        setIsLoading(false);
                     }, error => {
-                        console.error("Lỗi lắng nghe dữ liệu:", error);
+                        console.error("Error listening to data:", error);
+                        setIsLoading(false);
                     });
                 
-                return () => unsubscribe(); // Hủy lắng nghe khi component unmount
+                return () => unsubscribe();
             }, []);
 
-            // ... Các hàm xử lý (handleAddCustomer, handleUpdateCustomer, ...)
-            // Cần được chỉnh sửa để thêm thông tin `user` vào dữ liệu
+            const saveData = (updatedData) => {
+                 db.collection('data').doc('crmData').set(updatedData, { merge: true })
+                   .catch(error => console.error("Error saving data:", error));
+            };
+
+            const handleSearchChange = (term) => {
+                setSearchTerm(term);
+                if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+                searchTimeoutRef.current = setTimeout(() => {
+                    setDebouncedSearchTerm(term);
+                }, 300);
+            };
+
+            const filteredCustomers = useMemo(() => {
+                if (!debouncedSearchTerm.trim()) return customers;
+                const term = debouncedSearchTerm.toLowerCase();
+                return customers.filter(c => 
+                    c.name.toLowerCase().includes(term) || 
+                    c.phone.includes(term) || 
+                    (c.email && c.email.toLowerCase().includes(term))
+                );
+            }, [customers, debouncedSearchTerm]);
+
+            const handleSaveCustomer = (customerData) => {
+                let updatedCustomers;
+                if (editingCustomer) {
+                    updatedCustomers = customers.map(c => 
+                        c.id === editingCustomer.id ? { ...c, ...customerData, updatedBy: { uid: user.uid, name: user.displayName || user.email } } : c
+                    );
+                } else {
+                    const newCustomer = { 
+                        ...customerData, 
+                        id: 'cust_' + Date.now(), 
+                        interactions: [],
+                        createdBy: { uid: user.uid, name: user.displayName || user.email }
+                    };
+                    updatedCustomers = [...customers, newCustomer];
+                }
+                setCustomers(updatedCustomers);
+                saveData({ customers: updatedCustomers });
+            };
+            
+            const handleUpdateCustomer = (customerId, updates) => {
+                const updatedCustomers = customers.map(c => c.id === customerId ? { ...c, ...updates, lastContactDate: Date.now() } : c);
+                setCustomers(updatedCustomers);
+                saveData({ customers: updatedCustomers });
+            };
+            
+            const handleDeleteCustomer = (customerId) => {
+                const updatedCustomers = customers.filter(c => c.id !== customerId);
+                setCustomers(updatedCustomers);
+                saveData({ customers: updatedCustomers });
+                setDeleteConfirm({ isOpen: false, customerId: null });
+            };
+            
             const handleAddInteraction = (customerId, interaction) => {
                 const updatedCustomers = customers.map(c => {
                     if (c.id === customerId) {
-                        return { ...c, interactions: [...(c.interactions || []), interaction] };
+                        return { ...c, interactions: [...(c.interactions || []), interaction], lastContactDate: Date.now() };
                     }
                     return c;
                 });
-                // Logic lưu `updatedCustomers` vào state và Firestore
+                setCustomers(updatedCustomers);
+                saveData({ customers: updatedCustomers });
             };
 
+            const openEditCustomer = (customer) => { setEditingCustomer(customer); setShowCustomerForm(true); };
+            const openAddCustomer = () => { setEditingCustomer(null); setShowCustomerForm(true); };
+            const closeCustomerForm = () => { setEditingCustomer(null); setShowCustomerForm(false); };
+
+            if (isLoading) {
+                return React.createElement(LoadingSpinner);
+            }
+
+            // Đây là phần giao diện chính bị thiếu
             return React.createElement('div', { className: "min-h-screen bg-gray-100" }, [
                 React.createElement('header', { key: 'header', className: "bg-white shadow-sm border-b sticky top-0 z-40 p-4 flex justify-between items-center" }, [
                     React.createElement('h1', { key: 'title', className: 'text-xl font-bold'}, 'CRM Sales MG'),
                     React.createElement('div', { key: 'user-info', className: 'flex items-center space-x-4' }, [
                         React.createElement('span', { key: 'user-name'}, user.displayName || user.email),
-                        React.createElement('button', { key: 'logout-btn', onClick: onLogout, className: 'px-3 py-1 border rounded-lg text-sm' }, "Đăng xuất")
+                        React.createElement('button', { key: 'logout-btn', onClick: onLogout, className: 'px-3 py-1 border rounded-lg text-sm hover:bg-gray-100' }, "Đăng xuất")
                     ])
                 ]),
-                // ... Phần còn lại của giao diện App (nav, main, modals)
+                React.createElement('nav', { key: 'navigation', className: "bg-white border-b sticky top-[65px] z-30" }, 
+                    React.createElement('div', { className: "px-6 flex space-x-8" }, 
+                        React.createElement('button', { key: 'dash-btn', onClick: () => setActiveView('dashboard'), className: `py-4 px-1 border-b-2 font-medium text-sm ${activeView === 'dashboard' ? 'border-indigo-600 text-indigo-600' : 'border-transparent'}` }, "Tổng quan"),
+                        React.createElement('button', { key: 'pipe-btn', onClick: () => setActiveView('kanban'), className: `py-4 px-1 border-b-2 font-medium text-sm ${activeView === 'kanban' ? 'border-indigo-600 text-indigo-600' : 'border-transparent'}` }, "Pipeline"),
+                        React.createElement('button', { key: 'list-btn', onClick: () => setActiveView('list'), className: `py-4 px-1 border-b-2 font-medium text-sm ${activeView === 'list' ? 'border-indigo-600 text-indigo-600' : 'border-transparent'}` }, "Danh sách")
+                    )
+                ),
+                React.createElement('main', { key: 'main', className: "p-6" }, 
+                    activeView === 'dashboard' ? React.createElement('h2', null, 'Dashboard View') :
+                    activeView === 'kanban' ? React.createElement('h2', null, 'Kanban View') :
+                    activeView === 'list' ? React.createElement('h2', null, 'List View') : null
+                ),
+                React.createElement(Modal, {
+                    isOpen: showCustomerForm,
+                    title: editingCustomer ? "Chỉnh sửa Khách hàng" : "Thêm Khách hàng mới",
+                    onClose: closeCustomerForm
+                }, "Nội dung form ở đây"),
+                React.createElement(Modal, {
+                    isOpen: deleteConfirm.isOpen,
+                    title: "Xác nhận Xóa",
+                    onClose: () => setDeleteConfirm({isOpen: false, customerId: null})
+                }, [
+                    React.createElement('p', {key: 'p-confirm'}, 'Bạn có chắc muốn xóa khách hàng này?'),
+                    React.createElement('div', {key: 'btn-group', className: 'flex justify-end space-x-2 mt-4'}, [
+                        React.createElement('button', {key: 'cancel-btn', onClick: () => setDeleteConfirm({isOpen: false, customerId: null})}, 'Hủy'),
+                        React.createElement('button', {key: 'confirm-btn', onClick: () => handleDeleteCustomer(deleteConfirm.customerId), className: 'bg-red-500 text-white px-4 py-2 rounded'}, 'Xóa')
+                    ])
+                ])
             ]);
         };
 
-        // Component chính của ứng dụng
         const App = () => {
             const [user, setUser] = useState(null);
             const [isLoading, setIsLoading] = useState(true);
@@ -215,7 +278,12 @@
             };
 
             const handleGoogleLogin = async () => {
-                await auth.signInWithPopup(googleProvider);
+                try {
+                    await auth.signInWithPopup(googleProvider);
+                } catch (error) {
+                    console.error("Lỗi đăng nhập Google:", error);
+                    alert("Không thể đăng nhập bằng Google. Vui lòng kiểm tra lại cấu hình Firebase hoặc cửa sổ popup có bị chặn không.");
+                }
             };
 
             const handleLogout = async () => {
